@@ -1,0 +1,87 @@
+{
+  "source": "stream.md",
+  "requests": [
+    {
+      "method": "GET",
+      "url": "https://vibes.ai/api/generation-batches/batch-019fcec1-8e34-7944-ab8f-32aa099bd04a/stream"
+    }
+  ],
+  "responses": [
+    {
+      "success": true,
+      "isComplete": false,
+      "items": [
+        {
+          "id": "batch-019fcec1-8e34-7944-ab8f-32aa099bd04a-content-0",
+          "videoUrl": null,
+          "videoHandle": null,
+          "imageUrl": null,
+          "imageHandle": null,
+          "data": null,
+          "isLoading": true,
+          "error": null
+        }
+      ]
+    },
+    {
+      "success": true,
+      "isComplete": false,
+      "items": [
+        {
+          "id": "batch-019fcec1-8e34-7944-ab8f-32aa099bd04a-content-0",
+          "videoUrl": null,
+          "videoHandle": null,
+          "imageUrl": null,
+          "imageHandle": null,
+          "data": null,
+          "isLoading": true,
+          "error": null
+        },
+        {
+          "id": "batch-019fcec1-8e34-7944-ab8f-32aa099bd04a-content-0-1785879865835",
+          "videoUrl": "https://scontent-sin2-3.xx.fbcdn.net/o1/v/t0/f2/m250/AQPumHODDn0QitxOPjSlc0KxQvUgmLt5TpSamckVktTjfmniNiu0Y08dCvEzw5CXCgv5opM4fYcXbkDP3gYyWWpam1xF8XtIqnPGRk0CdShIL6ngLiti24PYfSUbLZSN.mp4?_nc_cat=107&_nc_sid=12fd43&_nc_ht=scontent-sin2-3.xx.fbcdn.net&_nc_ohc=7U7y4ZtvtGUQ7kNvwG_pd4u&ccb=17-1&_nc_gid=Vt_VZaPXfk7n9_HwDCcdgQ&_nc_zt=28&_nc_ss=70289&oh=00_AQGHq_LpzQSUMiM_9mpXfKemW_zPRsxpKpJ4f5Mn4uDRbA&oe=6A99E1E3",
+          "videoHandle": null,
+          "imageUrl": "https://scontent-sin11-2.xx.fbcdn.net/o1/v/t0/f2/m340/AQPyKehzycw0HfeBbymPd8S7uUSjoJgHUjc-M8WrWZ53gnufJZ5P2n9vr2joed0blQE_bjQLFiMsmtRSbIEsdwp4McENYlv-g53e_cJJz189igcnjJjEBTCFJtbjEP6QITIg-F_JMSRRQV__dlIFoIQ_1n09TA.jpeg?_nc_cat=108&_nc_sid=5b3566&_nc_ht=scontent-sin11-2.xx.fbcdn.net&_nc_ohc=elBQksPe0P8Q7kNvwGbCMHD&ccb=17-1&_nc_gid=XNv398Hd7BoIRfxInwUpOA&_nc_zt=23&_nc_ss=70289&oh=00_AQGoSnDM_Jkump-UGU2fAxuaj3MD-fT0FmfhyKzbQNEBSw&oe=6A743D73",
+          "imageHandle": null,
+          "data": {
+            "videoGenEntId": "1166597353213450",
+            "requestId": "www-1202d9ec-6fab-4152-9912-6ca8cbbaa910-d8eb71ac-3f2e-41b1-ab3a-41aab943a460",
+            "imageEntId": "1166597316546787"
+          },
+          "isLoading": false,
+          "error": null
+        }
+      ]
+    },
+    {
+      "success": true,
+      "isComplete": true,
+      "items": [
+        {
+          "id": "batch-019fcec1-8e34-7944-ab8f-32aa099bd04a-content-0",
+          "videoUrl": null,
+          "videoHandle": null,
+          "imageUrl": null,
+          "imageHandle": null,
+          "data": null,
+          "isLoading": true,
+          "error": null
+        },
+        {
+          "id": "batch-019fcec1-8e34-7944-ab8f-32aa099bd04a-content-0-1785879865835",
+          "videoUrl": "https://scontent-sin2-3.xx.fbcdn.net/o1/v/t0/f2/m250/AQPumHODDn0QitxOPjSlc0KxQvUgmLt5TpSamckVktTjfmniNiu0Y08dCvEzw5CXCgv5opM4fYcXbkDP3gYyWWpam1xF8XtIqnPGRk0CdShIL6ngLiti24PYfSUbLZSN.mp4?_nc_cat=107&_nc_sid=12fd43&_nc_ht=scontent-sin2-3.xx.fbcdn.net&_nc_ohc=7U7y4ZtvtGUQ7kNvwG_pd4u&ccb=17-1&_nc_gid=Vt_VZaPXfk7n9_HwDCcdgQ&_nc_zt=28&_nc_ss=70289&oh=00_AQGHq_LpzQSUMiM_9mpXfKemW_zPRsxpKpJ4f5Mn4uDRbA&oe=6A99E1E3",
+          "videoHandle": null,
+          "imageUrl": "https://scontent-sin11-2.xx.fbcdn.net/o1/v/t0/f2/m340/AQPyKehzycw0HfeBbymPd8S7uUSjoJgHUjc-M8WrWZ53gnufJZ5P2n9vr2joed0blQE_bjQLFiMsmtRSbIEsdwp4McENYlv-g53e_cJJz189igcnjJjEBTCFJtbjEP6QITIg-F_JMSRRQV__dlIFoIQ_1n09TA.jpeg?_nc_cat=108&_nc_sid=5b3566&_nc_ht=scontent-sin11-2.xx.fbcdn.net&_nc_ohc=elBQksPe0P8Q7kNvwGbCMHD&ccb=17-1&_nc_gid=XNv398Hd7BoIRfxInwUpOA&_nc_zt=23&_nc_ss=70289&oh=00_AQGoSnDM_Jkump-UGU2fAxuaj3MD-fT0FmfhyKzbQNEBSw&oe=6A743D73",
+          "imageHandle": null,
+          "data": {
+            "videoGenEntId": "1166597353213450",
+            "requestId": "www-1202d9ec-6fab-4152-9912-6ca8cbbaa910-d8eb71ac-3f2e-41b1-ab3a-41aab943a460",
+            "imageEntId": "1166597316546787"
+          },
+          "isLoading": false,
+          "error": null
+        }
+      ]
+    }
+  ]
+}

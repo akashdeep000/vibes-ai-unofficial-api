@@ -1,0 +1,19 @@
+{
+  "source": "content-bulk-delete.md",
+  "requests": [
+    {
+      "method": "DELETE",
+      "url": "https://vibes.ai/api/content-items/bulk-delete",
+      "body": {
+        "contentItemIds": ["saJw7zOwlqNnzbGhfO12e"],
+        "projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b"
+      }
+    }
+  ],
+  "responses": [
+    {
+      "deletedItems": 1,
+      "removedFromProject": 1
+    }
+  ]
+}

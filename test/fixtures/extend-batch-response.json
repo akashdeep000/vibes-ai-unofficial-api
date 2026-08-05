@@ -1,0 +1,83 @@
+{
+  "source": "extend-batch-response.md",
+  "requests": [
+    {
+      "method": "GET",
+      "url": "https://vibes.ai/api/generation-batches/extend-1785885630213-23897e52"
+    }
+  ],
+  "responses": [
+    {
+      "batch": {
+        "id": "extend-1785885630213-23897e52",
+        "userId": "1202d9ec-6fab-4152-9912-6ca8cbbaa910",
+        "projectId": "5a8d1d55-995c-4bc5-9136-e348d7cbcf6f",
+        "type": "videos",
+        "prompt": "continue the aerial dolly push-in over the misty valley, golden light holding, gentle motion",
+        "timestamp": "2026-08-04T23:20:30.000Z",
+        "isComplete": true,
+        "hasError": false,
+        "error": null,
+        "canRetry": true,
+        "config": {
+          "metadata": {
+            "dimensions": {
+              "width": 1280,
+              "height": 720
+            },
+            "aspectRatio": "16:9"
+          },
+          "videoModel": "midjen-extend",
+          "imageModel": "midjen-base",
+          "generationType": "extend",
+          "sourceVideoUrl": "https://scontent-sin2-3.xx.fbcdn.net/o1/v/t0/f2/...",
+          "sourceContentItemIds": [
+            {
+              "id": "batch-019fcf13-2f09-7eb8-a018-2d982e7bfa4e-content-0",
+              "source": "extendVideo"
+            }
+          ]
+        },
+        "systemPrompt": null,
+        "promptModel": "midjen-extend",
+        "imageModel": "midjen-base",
+        "videoModel": "midjen-extend",
+        "bulkGenId": null,
+        "generationStartTime": "2026-08-04T23:20:30.000Z",
+        "generationEndTime": "2026-08-04T23:21:38.000Z",
+        "creationContext": "legacy",
+        "createdAt": "2026-08-04T23:20:32.000Z",
+        "updatedAt": "2026-08-04T23:21:39.000Z",
+        "content": [
+          {
+            "id": "extend-1785885630213-23897e52-content-0-1785885636891",
+            "batchId": "extend-1785885630213-23897e52",
+            "type": "videos",
+            "imageUrl": null,
+            "videoUrl": "https://scontent-sin2-3.xx.fbcdn.net/o1/v/t0/f2/m250/AQPumHODDn0QitxOPjSlc0KxQvUgmLt5TpSamckVktTjfmniNiu0Y08dCvEzw5CXCgv5opM4fYcXbkDP3gYyWWpam1xF8XtIqnPGRk0CdShIL6ngLiti24PYfSUbLZSN.mp4?_nc_cat=107&_nc_sid=12fd43&_nc_ht=scontent-sin2-3.xx.fbcdn.net&_nc_ohc=7U7y4ZtvtGUQ7kNvwG_pd4u&ccb=17-1&_nc_gid=Vt_VZaPXfk7n9_HwDCcdgQ&_nc_zt=28&_nc_ss=70289&oh=00_AQGHq_LpzQSUMiM_9mpXfKemW_zPRsxpKpJ4f5Mn4uDRbA&oe=6A99E1E3",
+            "imageHandle": null,
+            "videoHandle": null,
+            "mediaEntId": "1166685826537936",
+            "prompt": null,
+            "imagePrompt": null,
+            "videoPrompt": null,
+            "isFavorited": false,
+            "isLoading": false,
+            "error": null,
+            "createdAt": "2026-08-04T23:20:34.000Z",
+            "structuredOutput": null,
+            "orderIndex": 0,
+            "srefValues": null,
+            "data": "{\"videoGenEntId\":\"1166685826537936\",\"requestId\":\"extend-1785885630213-23897e52\",\"config\":null}",
+            "canRetry": false,
+            "updatedAt": "2026-08-04T23:21:38.000Z",
+            "hasUploadedAncestor": false,
+            "sourceContentItemIds": null,
+            "isInTimeline": true,
+            "isFavoritedByUser": false
+          }
+        ]
+      }
+    }
+  ]
+}

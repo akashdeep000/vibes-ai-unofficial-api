@@ -1,0 +1,16 @@
+{
+  "source": "upload-media.md",
+  "requests": [],
+  "responses": [
+    {
+      "mediaEntId": "1166369879902864",
+      "cdnUrl": "https://scontent-sin6-3.xx.fbcdn.net/o1/v/t6/f2/m421/AQOXVucHN1Iuhcj6zNU83rhEY2YWFtxyYTaJfsGAFXF-BEzlGfRbayY88lDNfu3GIypx146BUjpU0jpLKNfuSYth6rNo?_nc_cat=110&_nc_sid=5b3566&_nc_ht=scontent-sin6-3.xx.fbcdn.net&_nc_ohc=x8DeieiKCAAQ7kNvwEYN-Qy&ccb=17-1&_nc_gid=3FYOQ6EOgNESVrW-ms0GTw&_nc_ss=70289&_nc_zt=14&oh=00_AQGXXxDSajmle1Dd1LuZoyN1TaEYs4EYyFhJivcJQNz8Uw&oe=6A999B2A",
+      "dimensions": {
+        "width": 1280,
+        "height": 720
+      },
+      "aspectRatio": "16:9",
+      "uploadToken": "1202d9ec-6fab-4152-9912-6ca8cbbaa910|1166369879902864|1785868942|c23688019e9b48aff1c2bd3b1c7490077a26e7844803acc56ce92b48eba69363"
+    }
+  ]
+}

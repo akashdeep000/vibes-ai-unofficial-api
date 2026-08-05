@@ -1,0 +1,16 @@
+{
+  "source": "project-delete.md",
+  "requests": [
+    {
+      "method": "DELETE",
+      "url": "https://vibes.ai/api/projects/7c3c6169-1282-448f-809a-6f692ae47037?deleteAssets=true"
+    }
+  ],
+  "responses": [
+    {
+      "success": true,
+      "message": "Project deleted successfully",
+      "deletedOrphanCount": 9
+    }
+  ]
+}

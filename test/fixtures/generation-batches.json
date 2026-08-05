@@ -1,0 +1,80 @@
+{
+  "source": "generation-batches.md",
+  "requests": [
+    {
+      "method": "POST",
+      "url": "https://vibes.ai/api/generation-batches",
+      "body": {
+        "id": "batch-019fce1b-bdce-7881-8057-d3a5347f266d",
+        "type": "videos",
+        "prompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+        "timestamp": "2026-08-04T18:49:12.398Z",
+        "content": [
+          {
+            "id": "batch-019fce1b-bdce-7881-8057-d3a5347f266d-content-0",
+            "type": "videos",
+            "isLoading": true
+          },
+          {
+            "id": "batch-019fce1b-bdce-7881-8057-d3a5347f266d-content-1",
+            "type": "videos",
+            "isLoading": true
+          },
+          {
+            "id": "batch-019fce1b-bdce-7881-8057-d3a5347f266d-content-2",
+            "type": "videos",
+            "isLoading": true
+          },
+          {
+            "id": "batch-019fce1b-bdce-7881-8057-d3a5347f266d-content-3",
+            "type": "videos",
+            "isLoading": true
+          }
+        ],
+        "isComplete": false,
+        "config": {
+          "directGeneration": true,
+          "promptModel": "gemini-2.5-flash",
+          "aspectRatio": "9:16",
+          "imageModel": "midjen-base",
+          "videoModel": "midjen-short",
+          "resolution": "720p",
+          "batchVariation": true,
+          "sourceContentItemIds": [
+            {
+              "id": "saJw7zOwlqNnzbGhfO12e",
+              "source": "start_frame"
+            },
+            {
+              "id": "R-87pwHcew94UWVW5pDpk",
+              "source": "end_frame"
+            }
+          ],
+          "directPromptImageHandle": {
+            "image_url": "https://scontent-sin6-3.xx.fbcdn.net/o1/v/t6/f2/m421/AQOXVucHN1Iuhcj6zNU83rhEY2YWFtxyYTaJfsGAFXF-BEzlGfRbayY88lDNfu3GIypx146BUjpU0jpLKNfuSYth6rNo?_nc_cat=110&_nc_sid=5b3566&_nc_ht=scontent-sin6-3.xx.fbcdn.net&_nc_ohc=x8DeieiKCAAQ7kNvwGCr0wW&ccb=17-1&_nc_gid=45TQhLg80r77PaNgjerxXQ&_nc_zt=14&_nc_ss=70289&oh=00_AQE5FwCo8LzYfDFTyKxjt-l0WBhtkRsgvaIV7KGyq4Oxpw&oe=6A999B2A",
+            "image_ent_id": "1166369879902864",
+            "source": "asset"
+          },
+          "lastFrameImageUrl": "https://scontent-sin2-1.xx.fbcdn.net/o1/v/t6/f2/m421/AQOafrMGAnyGC6eFG__ImH6hAxWXNdsa_Sc7VW-LwwNAp5g4y8Rj33k63TTu-_jA7Ul1UMT9CL_pkDsFZcJ6fq-QzlDJ?_nc_cat=102&_nc_sid=5b3566&_nc_ht=scontent-sin2-1.xx.fbcdn.net&_nc_ohc=VaIFstZn3j4Q7kNvwFYeqY6&ccb=17-1&_nc_gid=45TQhLg80r77PaNgjerxXQ&_nc_zt=14&_nc_ss=70289&oh=00_AQHVAp-fFES_nXoigBGxQm-dcrWabz_LCbQ6bjKbcdfkZQ&oe=6A999B6A",
+          "lastFrameImageEntId": "1166380623235123"
+        },
+        "promptModel": "gemini-2.5-flash",
+        "imageModel": "midjen-base",
+        "videoModel": "midjen-short",
+        "generationStartTime": "2026-08-04T18:49:12.398Z",
+        "isDirectGeneration": true,
+        "projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b"
+      }
+    }
+  ],
+  "responses": [
+    {
+      "batch": null,
+      "id": "batch-019fce1b-bdce-7881-8057-d3a5347f266d"
+    },
+    {
+      "batch": null,
+      "id": "batch-019fce1b-bdce-7881-8057-d3a5347f266d"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "source": "project-assets-list.md",
+  "requests": [
+    {
+      "method": "GET",
+      "url": "https://vibes.ai/api/project-assets?limit=50&offset=0&project_id=7a0f777a-d069-4b4b-8aa2-7560fe351c4b"
+    }
+  ],
+  "responses": [
+    {
+      "projects": null,
+      "items": [
+        {
+          "id": "R-87pwHcew94UWVW5pDpk",
+          "imageUrl": "https://scontent-sin2-1.xx.fbcdn.net/o1/v/t6/f2/m421/AQOafrMGAnyGC6eFG__ImH6hAxWXNdsa_Sc7VW-LwwNAp5g4y8Rj33k63TTu-_jA7Ul1UMT9CL_pkDsFZcJ6fq-QzlDJ?_nc_cat=102&_nc_sid=5b3566&_nc_ht=scontent-sin2-1.xx.fbcdn.net&_nc_ohc=VaIFstZn3j4Q7kNvwGpMaxR&ccb=17-1&_nc_gid=dF9LBfx0adz4mlFGktDipA&_nc_zt=14&_nc_ss=70289&oh=00_AQGbk102xsmkFSXLVGZF4cUAEX8VWNlNe0uRsxHgtACcOQ&oe=6A999B6A",
+          "videoUrl": null,
+          "imageHandle": null,
+          "videoHandle": null,
+          "mediaEntId": "1166380623235123",
+          "imageEntId": "1166380623235123",
+          "prompt": "Gemini_Generated_Image_c4n3b3c4n3b3c4n3.png",
+          "createdAt": "2026-08-04T18:41:06.000Z",
+          "isFavorited": false,
+          "projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b",
+          "projectName": "Test 1",
+          "projectThumbnailUrl": "https://scontent-sin2-1.xx.fbcdn.net/o1/v/t6/f2/m421/AQOafrMGAnyGC6eFG__ImH6hAxWXNdsa_Sc7VW-LwwNAp5g4y8Rj33k63TTu-_jA7Ul1UMT9CL_pkDsFZcJ6fq-QzlDJ?_nc_cat=102&_nc_sid=5b3566&_nc_ht=scontent-sin2-1.xx.fbcdn.net&_nc_ohc=VaIFstZn3j4Q7kNvwGpMaxR&ccb=17-1&_nc_gid=dF9LBfx0adz4mlFGktDipA&_nc_zt=14&_nc_ss=70289&oh=00_AQGbk102xsmkFSXLVGZF4cUAEX8VWNlNe0uRsxHgtACcOQ&oe=6A999B6A",
+          "relationship": "uploaded",
+          "hasUploadedAncestor": true,
+          "fromIngredientId": null
+        },
+        {
+          "id": "saJw7zOwlqNnzbGhfO12e",
+          "imageUrl": "https://scontent-sin6-3.xx.fbcdn.net/o1/v/t6/f2/m421/AQOXVucHN1Iuhcj6zNU83rhEY2YWFtxyYTaJfsGAFXF-BEzlGfRbayY88lDNfu3GIypx146BUjpU0jpLKNfuSYth6rNo?_nc_cat=110&_nc_sid=5b3566&_nc_ht=scontent-sin6-3.xx.fbcdn.net&_nc_ohc=x8DeieiKCAAQ7kNvwE-gC1b&ccb=17-1&_nc_gid=dF9LBfx0adz4mlFGktDipA&_nc_zt=14&_nc_ss=70289&oh=00_AQEQ7HD7B_v1QTl_uUFRvdLa5WwppVIu61WrE5icMkDSXA&oe=6A999B2A",
+          "videoUrl": null,
+          "imageHandle": null,
+          "videoHandle": null,
+          "mediaEntId": "1166369879902864",
+          "imageEntId": "1166369879902864",
+          "prompt": "Gemini_Generated_Image_auclocauclocaucl.png",
+          "createdAt": "2026-08-04T18:32:24.000Z",
+          "isFavorited": false,
+          "projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b",
+          "projectName": "Test 1",
+          "projectThumbnailUrl": "https://scontent-sin2-1.xx.fbcdn.net/o1/v/t6/f2/m421/AQOafrMGAnyGC6eFG__ImH6hAxWXNdsa_Sc7VW-LwwNAp5g4y8Rj33k63TTu-_jA7Ul1UMT9CL_pkDsFZcJ6fq-QzlDJ?_nc_cat=102&_nc_sid=5b3566&_nc_ht=scontent-sin2-1.xx.fbcdn.net&_nc_ohc=VaIFstZn3j4Q7kNvwGpMaxR&ccb=17-1&_nc_gid=dF9LBfx0adz4mlFGktDipA&_nc_zt=14&_nc_ss=70289&oh=00_AQGbk102xsmkFSXLVGZF4cUAEX8VWNlNe0uRsxHgtACcOQ&oe=6A999B6A",
+          "relationship": "uploaded",
+          "hasUploadedAncestor": true,
+          "fromIngredientId": null
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "source": "projects.md",
+  "requests": [
+    {
+      "method": "GET",
+      "url": "https://vibes.ai/api/projects?limit=25&offset=0&sort=newest"
+    },
+    {
+      "method": "POST",
+      "url": "https://vibes.ai/api/projects",
+      "body": {
+        "name": "Untitled"
+      }
+    }
+  ],
+  "responses": [
+    {
+      "success": true,
+      "projects": [
+        {
+          "id": "7c3c6169-1282-448f-809a-6f692ae47037",
+          "name": "Untitled",
+          "thumbnailUrl": "https://scontent-sin11-2.xx.fbcdn.net/v/t15.5256-10/765573062_1015226001278506_6503717142741244407_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=db3e61&_nc_ohc=Q1o4XDXFcQYQ7kNvwFBenC9&_nc_oc=Adr9k0AFFZuFu4YKbOkouR_eE34VO9pvMHi28OLwZ2SNwEUvjeeXD0XAWsO5H0TkztE&_nc_zt=23&_nc_ht=scontent-sin11-2.xx&_nc_gid=esKDGz_mkcoLcyWeHCicmw&_nc_ss=702a8&oh=00_AQHxlrgcck0-CuRdngSZo0-NFdYYrKPJJNF99PHZfbsIrw&oe=6A77F49F",
+          "exportStatus": "draft",
+          "createdAt": "2026-08-04T17:37:19.000Z",
+          "updatedAt": "2026-08-04T17:37:19.000Z",
+          "isShared": false
+        }
+      ],
+      "page": {
+        "count": 1,
+        "hasMore": false,
+        "nextOffset": null
+      }
+    },
+    {
+      "success": true,
+      "project": {
+        "id": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b",
+        "userId": "1202d9ec-6fab-4152-9912-6ca8cbbaa910",
+        "name": "Untitled",
+        "composition": {
+          "id": "studio-composition",
+          "tracks": [],
+          "duration": 5
+        },
+        "exportStatus": "draft",
+        "createdAt": "2026-08-04T18:25:36.025Z",
+        "updatedAt": "2026-08-04T18:25:36.025Z"
+      }
+    }
+  ]
+}

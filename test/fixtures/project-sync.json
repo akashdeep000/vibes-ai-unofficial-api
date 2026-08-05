@@ -1,0 +1,14 @@
+{
+  "source": "project-sync.md",
+  "requests": [
+    {
+      "method": "GET",
+      "url": "https://vibes.ai/api/sync?entityType=project&entityId=7a0f777a-d069-4b4b-8aa2-7560fe351c4b"
+    }
+  ],
+  "responses": [
+    {
+      "updatedAt": "2026-08-04T18:30:53.000Z|2026-08-04T18:32:24.000Z"
+    }
+  ]
+}

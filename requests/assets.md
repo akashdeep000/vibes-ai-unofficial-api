@@ -1,0 +1,488 @@
+## Request (for checking extend status it is using it but i think we can use in other places also)
+
+fetch("https://vibes.ai/api/projects/7a0f777a-d069-4b4b-8aa2-7560fe351c4b/assets", {
+"headers": {
+"accept": "_/_",
+"accept-language": "en-US,en;q=0.9",
+"baggage": "sentry-environment=production,sentry-release=b06102654b92d2d02ceb8b06f94c6d182344bed4,sentry-public_key=2f357cf8852a33530d72872e55d86a65,sentry-trace_id=b675ca0c8a2c48af9f9f1025490d0b02,sentry-org_id=4509963614355457,sentry-transaction=%2Fprojects%2F%3AprojectId%2Fcontent%2F%3AcontentItemId,sentry-sampled=true,sentry-sample_rand=0.08854574945423277,sentry-sample_rate=0.1",
+"content-type": "application/json",
+"priority": "u=1, i",
+"sec-ch-ua": "\"Not=A?Brand\";v=\"99\", \"Google Chrome\";v=\"151\", \"Chromium\";v=\"151\"",
+"sec-ch-ua-mobile": "?0",
+"sec-ch-ua-platform": "\"Linux\"",
+"sec-fetch-dest": "empty",
+"sec-fetch-mode": "cors",
+"sec-fetch-site": "same-origin",
+"sentry-trace": "b675ca0c8a2c48af9f9f1025490d0b02-bc5aa328bdb41080-1",
+"cookie": "cookie_ack=true; meta_session=3c4878b0-9862-4315-877b-d8b3779b1f23.68qi4n9QuToiRQE2IouZ3HkdPGE2ypdPXc8nWnJ4sTQ",
+"Referer": "https://vibes.ai/projects/7a0f777a-d069-4b4b-8aa2-7560fe351c4b/content/batch-019fce1b-bdce-7881-8057-d3a5347f266d-content-0"
+},
+"body": null,
+"method": "GET"
+});
+
+## Responce
+
+{
+"success": true,
+"assets": [
+{
+"id": "9d637f95-9be2-4257-a5d1-f15ad8e8dcf4",
+"projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b",
+"contentItemId": "extend-1785870410928-ebb7dc5b-content-0-1785870417736",
+"relationship": "created",
+"sourceProjectId": null,
+"isInTimeline": false,
+"addedAt": "2026-08-04T19:06:59.000Z",
+"type": "videos",
+"imageUrl": "https://scontent-sin2-1.xx.fbcdn.net/o1/v/t6/f2/m421/AQM28izxvoFMuVzPZme6rJotcIEYeBMhSuTax-6FOHRVtwWD3RjvLGuiRruHGQe2XJqQ5HVInWQCcuZ2mDZ7KcstoQzM?_nc_cat=100&_nc_sid=5b3566&_nc_ht=scontent-sin2-1.xx.fbcdn.net&_nc_ohc=UF97dVUX4bYQ7kNvwESWfVo&ccb=17-1&_nc_gid=1ssXAKJ-FEC4lkgazUmEfw&_nc_ss=70289&_nc_zt=14&oh=00_AQHR7aGzJcMH7Nae17J_sc9ZtITw6LGb2FE1WA0_2eNb4Q&oe=6A999934",
+"videoUrl": "https://scontent-sin2-3.xx.fbcdn.net/o1/v/t0/f2/m249/AQMXS1ePk5j3vbNsB4PZCeZoAG6WAenTjShTlefnoaawx5_6n4DXMDhmJ_BgV4FP4swbobqNg73yVz5xsHg8iozqIjfUXHBM-A1qV_H1IG5SHOzVz8ZDC9zr5M52NSmt.mp4?_nc_cat=107&_nc_sid=95e8d1&_nc_ht=scontent-sin2-3.xx.fbcdn.net&_nc_ohc=Q00rO5RYJMcQ7kNvwGshWDy&ccb=17-1&_nc_gid=1ssXAKJ-FEC4lkgazUmEfw&_nc_ss=70289&_nc_zt=28&oh=00_AQGhAnoFKJusY_WjtIASxwlKQwUDyQt6fSFawwP_ch39ag&oe=6A999257",
+"imageHandle": null,
+"videoHandle": null,
+"prompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"imagePrompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"videoPrompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"isFavorited": false,
+"isLoading": false,
+"error": null,
+"createdAt": "2026-08-04T19:06:58.000Z",
+"batchId": "extend-1785870410928-ebb7dc5b",
+"structuredOutput": {
+"metadata": {
+"dimensions": {
+"width": 1280,
+"height": 720
+},
+"aspectRatio": "16:9"
+}
+},
+"orderIndex": 0,
+"hasUploadedAncestor": true,
+"mediaEntId": "1166411906565328",
+"data": {
+"videoGenEntId": "1166411906565328",
+"requestId": "www-extend-1202d9ec-6fab-4152-9912-6ca8cbbaa910-ab095126-b373-4647-b2f1-a7e33cfbc3a5",
+"imageEntId": "1166413043231881"
+}
+},
+{
+"id": "9adf5842-8749-4879-977f-1933a8cddbd7",
+"projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b",
+"contentItemId": "batch-019fce28-1d4a-74f6-bf0a-8e2ec7344df5-content-0",
+"relationship": "created",
+"sourceProjectId": null,
+"isInTimeline": false,
+"addedAt": "2026-08-04T19:02:46.000Z",
+"type": "images",
+"imageUrl": "https://scontent-sin6-2.xx.fbcdn.net/o1/v/t6/f2/m421/AQPfMS7Ie2uW6aqIeFJfIwu9tn-WCbCFbZgIFhjCcZ3QzsDefYuIOwioys6iTsb3ufzyzZGhKemp1_2tPvqLxz5_Rn5QHbqkKMZcR8nuBKomBhzWX-fvouuzqno7hOxOF1WuZeFd8QFMoFNLdEvdue9jP7h0Jg.jpeg?_nc_cat=109&_nc_sid=5b3566&_nc_ht=scontent-sin6-2.xx.fbcdn.net&_nc_ohc=79rCeSaBITYQ7kNvwELF-Yx&ccb=17-1&_nc_gid=SkQJRkfnyryKstHmGfxA3w&_nc_ss=70289&_nc_zt=14&oh=00_AQHsRwA_fMEYO9vAzJAsQgMSC-26m9cWtXw0yEMuukuATA&oe=6A99C14B",
+"videoUrl": null,
+"imageHandle": null,
+"videoHandle": null,
+"prompt": "# gridA_2x3.png — mazdoor (hero cutouts, 6 cells)",
+"imagePrompt": "# gridA_2x3.png — mazdoor (hero cutouts, 6 cells) --- Generate a PLAIN PHOTOGRAPH of a strict 2×3 grid of 6 equal rectangular panels — a technical contact sheet of cutout assets, NOT an artwork, NOT a scrapbook page, NOT a collage layout, NOT a mood board, NOT a journal spread, NOT a storyboard. - All 6 panels are identical size, perfectly aligned, separated by thin uniform divider lines. - EVERY panel is filled with its subject — no empty, no blank, no grey panels, no missing panels. - Panel order is fixed: Panel 1 top-left, then left-to-right, top-to-bottom. Do not reorder, add, or replace any panel. - Every panel background is a FLAT uniform charcoal-grey rectangle. All paper texture, halftone, scissor-cut edges and collage styling apply ONLY to the cutout subjects inside the panels — never to the panel background, never to the image frame. - Collage accents (tape, pins, threads, map fragments, caption strips, rubber stamps) are NOT part of grid generations. - ABSOLUTELY NO TEXT ANYWHERE: no captions under or over panels, no labels, no letters, no numbers, no watermark, no logo. World-lock for every panel (the story's composition constants — do not vary them): - soft key light from the top-left, shadows fall bottom-right — identical in every cell and every generation of this story - full-body cutouts ALWAYS fill the full height of their panel — head and feet both visible, nothing cropped — so every character shares one on-screen scale - full-body shots keep feet visible and uncropped; only CLOSE inserts (hands, props, mud) may crop a subject - cutouts stand ON the ground — feet touch the panel bottom edge or the plate's horizon line, never float - the only signal accent in the whole story is amber; glints and highlights are amber — never white, never yellow-green Section contract (do not vary): - SAME man in all six panels — identical face, build, rumpled Style of the cutout subjects: hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background, black and white halftone photograph cutouts with rough scissor-cut edges and offset accent strokes, torn paper edges, masking tape fragments, rubber stamp marks, amber thread and brass pins where the story calls for connections, desaturated archival palette of bone white, ink black, halftone gray with one amber signal accent and a muted ochre secondary, visible print grain and paper fiber, matte, flat even documentary lighting with soft cutout drop shadows. NOT digital illustration, NOT cartoon, NOT 3D render, NOT glossy, no gradients, no clutter, no watermark, no logos, no text. Panels in order: Panel 1 — mazdoor-sit: seated sifter, knees wide, hands sifting a handful of wet river mud, rumpled dhoti, bare chest, loose head cloth Panel 2 — mazdoor-kneel: crouched, both hands deep in dark mud, digging Panel 3 — mazdoor-stand: standing, shaking a wide wicker sieve over the pit edge Panel 4 — mazdoor-hands: close-up of two calloused hands, mud dripping between fingers, a tiny glint inside the mud Panel 5 — mazdoor-wash: bent over a muddy puddle, rinsing mud off his hands and arms, splash Panel 6 — mazdoor-far: small distant worker silhouette bending to the mud, seen from far across the pit (crowd filler) NOT digital illustration, NOT cartoon, NOT 3D render, NOT glossy, no gradients, no watermark, no logos, no text.",
+"videoPrompt": null,
+"isFavorited": false,
+"isLoading": false,
+"error": null,
+"createdAt": "2026-08-04T19:02:45.000Z",
+"batchId": "batch-019fce28-1d4a-74f6-bf0a-8e2ec7344df5",
+"structuredOutput": {
+"config": {
+"imageModel": "midjen-base",
+"resolution": "720p",
+"videoModel": "midjen-short",
+"aspectRatio": "9:16",
+"promptModel": "gemini-2.5-flash",
+"batchVariation": true,
+"generationType": "t2i",
+"directGeneration": true
+},
+"metadata": {
+"dimensions": {
+"width": 720,
+"height": 1280
+},
+"aspectRatio": "9:16"
+}
+},
+"orderIndex": 0,
+"hasUploadedAncestor": false,
+"mediaEntId": "1166407176565801",
+"data": {
+"requestId": "www-019fce28-1d4c-746a-9cf2-6fe4f8fac152",
+"imageEntId": "1166407176565801"
+}
+},
+{
+"id": "820e7eb5-7306-466f-845d-b236a9a23b73",
+"projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b",
+"contentItemId": "batch-019fce28-1d4a-74f6-bf0a-8e2ec7344df5-content-1",
+"relationship": "created",
+"sourceProjectId": null,
+"isInTimeline": false,
+"addedAt": "2026-08-04T19:02:46.000Z",
+"type": "images",
+"imageUrl": "https://scontent-sin2-1.xx.fbcdn.net/o1/v/t6/f2/m421/AQO4a5RpT2Bhax8JrmjoDVvauRZFXGYXeTlox9EeGaN7gHIEP4yrpuqVabskMk38aP9-ndWDNotu7wfDZAwFd4CvrfwWjJtjZKj3uxSvj01WLKAAQX5t1Kw_UaewySfHw1DXb2gnHz7mFtqoTyDjfCj9p3iW2A.jpeg?_nc_cat=102&_nc_sid=5b3566&_nc_ht=scontent-sin2-1.xx.fbcdn.net&_nc_ohc=LEnQ4ht6-aoQ7kNvwFvC8eA&ccb=17-1&_nc_gid=SkQJRkfnyryKstHmGfxA3w&_nc_ss=70289&_nc_zt=14&oh=00_AQGj8zqpe9ZbvihcnAZOptXXmpKRUP-PUcEDaChjOhWq4A&oe=6A9994DA",
+"videoUrl": null,
+"imageHandle": null,
+"videoHandle": null,
+"prompt": "# gridA_2x3.png — mazdoor (hero cutouts, 6 cells)",
+"imagePrompt": "# gridA_2x3.png — mazdoor (hero cutouts, 6 cells) --- Generate a PLAIN PHOTOGRAPH of a strict 2×3 grid of 6 equal rectangular panels — a technical contact sheet of cutout assets, NOT an artwork, NOT a scrapbook page, NOT a collage layout, NOT a mood board, NOT a journal spread, NOT a storyboard. - All 6 panels are identical size, perfectly aligned, separated by thin uniform divider lines. - EVERY panel is filled with its subject — no empty, no blank, no grey panels, no missing panels. - Panel order is fixed: Panel 1 top-left, then left-to-right, top-to-bottom. Do not reorder, add, or replace any panel. - Every panel background is a FLAT uniform charcoal-grey rectangle. All paper texture, halftone, scissor-cut edges and collage styling apply ONLY to the cutout subjects inside the panels — never to the panel background, never to the image frame. - Collage accents (tape, pins, threads, map fragments, caption strips, rubber stamps) are NOT part of grid generations. - ABSOLUTELY NO TEXT ANYWHERE: no captions under or over panels, no labels, no letters, no numbers, no watermark, no logo. World-lock for every panel (the story's composition constants — do not vary them): - soft key light from the top-left, shadows fall bottom-right — identical in every cell and every generation of this story - full-body cutouts ALWAYS fill the full height of their panel — head and feet both visible, nothing cropped — so every character shares one on-screen scale - full-body shots keep feet visible and uncropped; only CLOSE inserts (hands, props, mud) may crop a subject - cutouts stand ON the ground — feet touch the panel bottom edge or the plate's horizon line, never float - the only signal accent in the whole story is amber; glints and highlights are amber — never white, never yellow-green Section contract (do not vary): - SAME man in all six panels — identical face, build, rumpled Style of the cutout subjects: hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background, black and white halftone photograph cutouts with rough scissor-cut edges and offset accent strokes, torn paper edges, masking tape fragments, rubber stamp marks, amber thread and brass pins where the story calls for connections, desaturated archival palette of bone white, ink black, halftone gray with one amber signal accent and a muted ochre secondary, visible print grain and paper fiber, matte, flat even documentary lighting with soft cutout drop shadows. NOT digital illustration, NOT cartoon, NOT 3D render, NOT glossy, no gradients, no clutter, no watermark, no logos, no text. Panels in order: Panel 1 — mazdoor-sit: seated sifter, knees wide, hands sifting a handful of wet river mud, rumpled dhoti, bare chest, loose head cloth Panel 2 — mazdoor-kneel: crouched, both hands deep in dark mud, digging Panel 3 — mazdoor-stand: standing, shaking a wide wicker sieve over the pit edge Panel 4 — mazdoor-hands: close-up of two calloused hands, mud dripping between fingers, a tiny glint inside the mud Panel 5 — mazdoor-wash: bent over a muddy puddle, rinsing mud off his hands and arms, splash Panel 6 — mazdoor-far: small distant worker silhouette bending to the mud, seen from far across the pit (crowd filler) NOT digital illustration, NOT cartoon, NOT 3D render, NOT glossy, no gradients, no watermark, no logos, no text.",
+"videoPrompt": null,
+"isFavorited": false,
+"isLoading": false,
+"error": null,
+"createdAt": "2026-08-04T19:02:45.000Z",
+"batchId": "batch-019fce28-1d4a-74f6-bf0a-8e2ec7344df5",
+"structuredOutput": {
+"config": {
+"imageModel": "midjen-base",
+"resolution": "720p",
+"videoModel": "midjen-short",
+"aspectRatio": "9:16",
+"promptModel": "gemini-2.5-flash",
+"batchVariation": true,
+"generationType": "t2i",
+"directGeneration": true
+},
+"metadata": {
+"dimensions": {
+"width": 720,
+"height": 1280
+},
+"aspectRatio": "9:16"
+}
+},
+"orderIndex": 1,
+"hasUploadedAncestor": false,
+"mediaEntId": "1166407083232477",
+"data": {
+"requestId": "www-019fce28-1d4c-746a-9cf2-6fe4f8fac152",
+"imageEntId": "1166407083232477"
+}
+},
+{
+"id": "0493c44f-cd5b-4ae0-ba97-6f3bc1d583f1",
+"projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b",
+"contentItemId": "batch-019fce28-1d4a-74f6-bf0a-8e2ec7344df5-content-2",
+"relationship": "created",
+"sourceProjectId": null,
+"isInTimeline": false,
+"addedAt": "2026-08-04T19:02:46.000Z",
+"type": "images",
+"imageUrl": "https://scontent-sin2-1.xx.fbcdn.net/o1/v/t6/f2/m421/AQMVKfbqj57hauaodCdHbwrFwcjoGuhjUpDq_dId0pCvEkiJ9K03WAVSFACSOvsa9QEkpAjNpoODZ0tbfbHQ5LZI3b9iCX-V2n6VdCTa-7I5MkhP1--apaVYZhKjeO7tVfxfYWJCwX9stT6NaWK_OvRX62OMjA.jpeg?_nc_cat=102&_nc_sid=5b3566&_nc_ht=scontent-sin2-1.xx.fbcdn.net&_nc_ohc=FRwK9lU-Lm8Q7kNvwG_lHdo&ccb=17-1&_nc_gid=SkQJRkfnyryKstHmGfxA3w&_nc_ss=70289&_nc_zt=14&oh=00_AQF-yl_w8ClOg2-D06n9Min2VMQ973K8iQBbYFf8HRytgQ&oe=6A99B6A2",
+"videoUrl": null,
+"imageHandle": null,
+"videoHandle": null,
+"prompt": "# gridA_2x3.png — mazdoor (hero cutouts, 6 cells)",
+"imagePrompt": "# gridA_2x3.png — mazdoor (hero cutouts, 6 cells) --- Generate a PLAIN PHOTOGRAPH of a strict 2×3 grid of 6 equal rectangular panels — a technical contact sheet of cutout assets, NOT an artwork, NOT a scrapbook page, NOT a collage layout, NOT a mood board, NOT a journal spread, NOT a storyboard. - All 6 panels are identical size, perfectly aligned, separated by thin uniform divider lines. - EVERY panel is filled with its subject — no empty, no blank, no grey panels, no missing panels. - Panel order is fixed: Panel 1 top-left, then left-to-right, top-to-bottom. Do not reorder, add, or replace any panel. - Every panel background is a FLAT uniform charcoal-grey rectangle. All paper texture, halftone, scissor-cut edges and collage styling apply ONLY to the cutout subjects inside the panels — never to the panel background, never to the image frame. - Collage accents (tape, pins, threads, map fragments, caption strips, rubber stamps) are NOT part of grid generations. - ABSOLUTELY NO TEXT ANYWHERE: no captions under or over panels, no labels, no letters, no numbers, no watermark, no logo. World-lock for every panel (the story's composition constants — do not vary them): - soft key light from the top-left, shadows fall bottom-right — identical in every cell and every generation of this story - full-body cutouts ALWAYS fill the full height of their panel — head and feet both visible, nothing cropped — so every character shares one on-screen scale - full-body shots keep feet visible and uncropped; only CLOSE inserts (hands, props, mud) may crop a subject - cutouts stand ON the ground — feet touch the panel bottom edge or the plate's horizon line, never float - the only signal accent in the whole story is amber; glints and highlights are amber — never white, never yellow-green Section contract (do not vary): - SAME man in all six panels — identical face, build, rumpled Style of the cutout subjects: hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background, black and white halftone photograph cutouts with rough scissor-cut edges and offset accent strokes, torn paper edges, masking tape fragments, rubber stamp marks, amber thread and brass pins where the story calls for connections, desaturated archival palette of bone white, ink black, halftone gray with one amber signal accent and a muted ochre secondary, visible print grain and paper fiber, matte, flat even documentary lighting with soft cutout drop shadows. NOT digital illustration, NOT cartoon, NOT 3D render, NOT glossy, no gradients, no clutter, no watermark, no logos, no text. Panels in order: Panel 1 — mazdoor-sit: seated sifter, knees wide, hands sifting a handful of wet river mud, rumpled dhoti, bare chest, loose head cloth Panel 2 — mazdoor-kneel: crouched, both hands deep in dark mud, digging Panel 3 — mazdoor-stand: standing, shaking a wide wicker sieve over the pit edge Panel 4 — mazdoor-hands: close-up of two calloused hands, mud dripping between fingers, a tiny glint inside the mud Panel 5 — mazdoor-wash: bent over a muddy puddle, rinsing mud off his hands and arms, splash Panel 6 — mazdoor-far: small distant worker silhouette bending to the mud, seen from far across the pit (crowd filler) NOT digital illustration, NOT cartoon, NOT 3D render, NOT glossy, no gradients, no watermark, no logos, no text.",
+"videoPrompt": null,
+"isFavorited": false,
+"isLoading": false,
+"error": null,
+"createdAt": "2026-08-04T19:02:45.000Z",
+"batchId": "batch-019fce28-1d4a-74f6-bf0a-8e2ec7344df5",
+"structuredOutput": {
+"config": {
+"imageModel": "midjen-base",
+"resolution": "720p",
+"videoModel": "midjen-short",
+"aspectRatio": "9:16",
+"promptModel": "gemini-2.5-flash",
+"batchVariation": true,
+"generationType": "t2i",
+"directGeneration": true
+},
+"metadata": {
+"dimensions": {
+"width": 720,
+"height": 1280
+},
+"aspectRatio": "9:16"
+}
+},
+"orderIndex": 2,
+"hasUploadedAncestor": false,
+"mediaEntId": "1166407026565816",
+"data": {
+"requestId": "www-019fce28-1d4c-746a-9cf2-6fe4f8fac152",
+"imageEntId": "1166407026565816"
+}
+},
+{
+"id": "780ed8f1-125f-4766-995c-e0b73ccebe7e",
+"projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b",
+"contentItemId": "batch-019fce28-1d4a-74f6-bf0a-8e2ec7344df5-content-3",
+"relationship": "created",
+"sourceProjectId": null,
+"isInTimeline": false,
+"addedAt": "2026-08-04T19:02:46.000Z",
+"type": "images",
+"imageUrl": "https://scontent-sin2-2.xx.fbcdn.net/o1/v/t6/f2/m421/AQMxS1SDiwEOHCZ25daiibZwOjcRUmEf8rbL6Ll1OTnuM1iuqfFdDBYznzYcMoterfJ5S_ZYcVpTPv3z3Jttl53tD7i2lpwFpAANb6tJry0ciPGgLOlYUjIfBE0QaSWdRz9h3PNUasAGJe2nOrIyZeogrm5f4w.jpeg?_nc_cat=103&_nc_sid=5b3566&_nc_ht=scontent-sin2-2.xx.fbcdn.net&_nc_ohc=KmShWGllNCMQ7kNvwEqaKpe&ccb=17-1&_nc_gid=SkQJRkfnyryKstHmGfxA3w&_nc_ss=70289&_nc_zt=14&oh=00_AQGtGen3gzFgC7VOqPPXgoV299jxkb1fe8FjX642yRZ1Pg&oe=6A999405",
+"videoUrl": null,
+"imageHandle": null,
+"videoHandle": null,
+"prompt": "# gridA_2x3.png — mazdoor (hero cutouts, 6 cells)",
+"imagePrompt": "# gridA_2x3.png — mazdoor (hero cutouts, 6 cells) --- Generate a PLAIN PHOTOGRAPH of a strict 2×3 grid of 6 equal rectangular panels — a technical contact sheet of cutout assets, NOT an artwork, NOT a scrapbook page, NOT a collage layout, NOT a mood board, NOT a journal spread, NOT a storyboard. - All 6 panels are identical size, perfectly aligned, separated by thin uniform divider lines. - EVERY panel is filled with its subject — no empty, no blank, no grey panels, no missing panels. - Panel order is fixed: Panel 1 top-left, then left-to-right, top-to-bottom. Do not reorder, add, or replace any panel. - Every panel background is a FLAT uniform charcoal-grey rectangle. All paper texture, halftone, scissor-cut edges and collage styling apply ONLY to the cutout subjects inside the panels — never to the panel background, never to the image frame. - Collage accents (tape, pins, threads, map fragments, caption strips, rubber stamps) are NOT part of grid generations. - ABSOLUTELY NO TEXT ANYWHERE: no captions under or over panels, no labels, no letters, no numbers, no watermark, no logo. World-lock for every panel (the story's composition constants — do not vary them): - soft key light from the top-left, shadows fall bottom-right — identical in every cell and every generation of this story - full-body cutouts ALWAYS fill the full height of their panel — head and feet both visible, nothing cropped — so every character shares one on-screen scale - full-body shots keep feet visible and uncropped; only CLOSE inserts (hands, props, mud) may crop a subject - cutouts stand ON the ground — feet touch the panel bottom edge or the plate's horizon line, never float - the only signal accent in the whole story is amber; glints and highlights are amber — never white, never yellow-green Section contract (do not vary): - SAME man in all six panels — identical face, build, rumpled Style of the cutout subjects: hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background, black and white halftone photograph cutouts with rough scissor-cut edges and offset accent strokes, torn paper edges, masking tape fragments, rubber stamp marks, amber thread and brass pins where the story calls for connections, desaturated archival palette of bone white, ink black, halftone gray with one amber signal accent and a muted ochre secondary, visible print grain and paper fiber, matte, flat even documentary lighting with soft cutout drop shadows. NOT digital illustration, NOT cartoon, NOT 3D render, NOT glossy, no gradients, no clutter, no watermark, no logos, no text. Panels in order: Panel 1 — mazdoor-sit: seated sifter, knees wide, hands sifting a handful of wet river mud, rumpled dhoti, bare chest, loose head cloth Panel 2 — mazdoor-kneel: crouched, both hands deep in dark mud, digging Panel 3 — mazdoor-stand: standing, shaking a wide wicker sieve over the pit edge Panel 4 — mazdoor-hands: close-up of two calloused hands, mud dripping between fingers, a tiny glint inside the mud Panel 5 — mazdoor-wash: bent over a muddy puddle, rinsing mud off his hands and arms, splash Panel 6 — mazdoor-far: small distant worker silhouette bending to the mud, seen from far across the pit (crowd filler) NOT digital illustration, NOT cartoon, NOT 3D render, NOT glossy, no gradients, no watermark, no logos, no text.",
+"videoPrompt": null,
+"isFavorited": false,
+"isLoading": false,
+"error": null,
+"createdAt": "2026-08-04T19:02:45.000Z",
+"batchId": "batch-019fce28-1d4a-74f6-bf0a-8e2ec7344df5",
+"structuredOutput": {
+"config": {
+"imageModel": "midjen-base",
+"resolution": "720p",
+"videoModel": "midjen-short",
+"aspectRatio": "9:16",
+"promptModel": "gemini-2.5-flash",
+"batchVariation": true,
+"generationType": "t2i",
+"directGeneration": true
+},
+"metadata": {
+"dimensions": {
+"width": 720,
+"height": 1280
+},
+"aspectRatio": "9:16"
+}
+},
+"orderIndex": 3,
+"hasUploadedAncestor": false,
+"mediaEntId": "1166407136565805",
+"data": {
+"requestId": "www-019fce28-1d4c-746a-9cf2-6fe4f8fac152",
+"imageEntId": "1166407136565805"
+}
+},
+{
+"id": "b634b213-8a06-4d50-84a2-23d6d3b3f595",
+"projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b",
+"contentItemId": "batch-019fce1b-bdce-7881-8057-d3a5347f266d-content-0",
+"relationship": "created",
+"sourceProjectId": null,
+"isInTimeline": false,
+"addedAt": "2026-08-04T18:49:15.000Z",
+"type": "videos",
+"imageUrl": "https://scontent-sin6-3.xx.fbcdn.net/o1/v/t6/f2/m421/AQOXVucHN1Iuhcj6zNU83rhEY2YWFtxyYTaJfsGAFXF-BEzlGfRbayY88lDNfu3GIypx146BUjpU0jpLKNfuSYth6rNo?_nc_cat=110&_nc_sid=5b3566&_nc_ht=scontent-sin6-3.xx.fbcdn.net&_nc_ohc=x8DeieiKCAAQ7kNvwE-gC1b&ccb=17-1&_nc_gid=dF9LBfx0adz4mlFGktDipA&_nc_zt=14&_nc_ss=70289&oh=00_AQEQ7HD7B_v1QTl_uUFRvdLa5WwppVIu61WrE5icMkDSXA&oe=6A999B2A",
+"videoUrl": "https://video-sin11-1.xx.fbcdn.net/o1/v/t2/f2/m412/AQN-Jlhpj_d96MD5zXFO3rJ03RXpCLujAU6Veg9edrWOKojunH_8fp9ELuax01AZXYr9RWLTGDGSxkonNzV5HUG47kYy8WeztV7wmd4.mp4?_nc_cat=105&_nc_sid=b66105&_nc_ht=video-sin11-1.xx.fbcdn.net&_nc_ohc=16I3QSyNuKgQ7kNvwGGf1QU&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5WSV9VU0VDQVNFX1BST0RVQ1RfVFlQRS4uQzMuMTI4MC5kYXNoX2gyNjQtYmFzaWMtZ2VuMl83MjBwIiwieHB2X2Fzc2V0X2lkIjoxMDc0NTg5ODA4MzIyNzU0LCJhc3NldF9hZ2VfZGF5cyI6MCwidmlfdXNlY2FzZV9pZCI6MTA5ODAsImR1cmF0aW9uX3MiOjUsInVybGdlbl9zb3VyY2UiOiJ3d3cifQ%3D%3D&ccb=17-1&vs=2a58791a8a49c4ce&_nc_vs=HBkcFQIYQGZiX3Blcm1hbmVudC8zQjRBMDVDRDRCQzU1Njg4OENCNTE2QjM5MzgxODI4NF92aWRlb19kYXNoaW5pdC5tcDQVAALIARIAKAAYABsCiAd1c2Vfb2lsATEScHJvZ3Jlc3NpdmVfcmVjaXBlATEVAAAmhKPv_K3V6AMVAigCQzMsF0AUVP3ztkWiGBlkYXNoX2gyNjQtYmFzaWMtZ2VuMl83MjBwEQB1AGXIqwEA&_nc_gid=z4489gpy_waOPcL-J5BSmA&_nc_zt=28&_nc_ss=702a8&oh=00_AQHdbG-Cgrf8gjyqPY7_kgkWZuJnN-zuJJbybiviToEHXg&oe=6A7824F6",
+"imageHandle": null,
+"videoHandle": null,
+"prompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"imagePrompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"videoPrompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"isFavorited": false,
+"isLoading": false,
+"error": null,
+"createdAt": "2026-08-04T18:49:14.000Z",
+"batchId": "batch-019fce1b-bdce-7881-8057-d3a5347f266d",
+"structuredOutput": {
+"metadata": {
+"dimensions": {
+"width": 720,
+"height": 1280
+},
+"aspectRatio": "9:16"
+}
+},
+"orderIndex": 0,
+"hasUploadedAncestor": true,
+"mediaEntId": "1166391013234084",
+"data": {
+"videoGenEntId": "1166391013234084",
+"requestId": "www-1202d9ec-6fab-4152-9912-6ca8cbbaa910-3124baa5-c761-401b-a423-33c6da9d4632",
+"imageEntId": "1166369879902864"
+}
+},
+{
+"id": "62dbaffc-18b8-4480-8330-db9c2c66f53a",
+"projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b",
+"contentItemId": "batch-019fce1b-bdce-7881-8057-d3a5347f266d-content-1",
+"relationship": "created",
+"sourceProjectId": null,
+"isInTimeline": false,
+"addedAt": "2026-08-04T18:49:15.000Z",
+"type": "videos",
+"imageUrl": "https://scontent-sin6-3.xx.fbcdn.net/o1/v/t6/f2/m421/AQOXVucHN1Iuhcj6zNU83rhEY2YWFtxyYTaJfsGAFXF-BEzlGfRbayY88lDNfu3GIypx146BUjpU0jpLKNfuSYth6rNo?_nc_cat=110&_nc_sid=5b3566&_nc_ht=scontent-sin6-3.xx.fbcdn.net&_nc_ohc=x8DeieiKCAAQ7kNvwE-gC1b&ccb=17-1&_nc_gid=dF9LBfx0adz4mlFGktDipA&_nc_zt=14&_nc_ss=70289&oh=00_AQEQ7HD7B_v1QTl_uUFRvdLa5WwppVIu61WrE5icMkDSXA&oe=6A999B2A",
+"videoUrl": "https://video-sin2-1.xx.fbcdn.net/o1/v/t2/f2/m412/AQNYJzeGrDQknB-tlB99ykH9hfVyr_ffZ8XvdgS2DODR8ykJzF_AqfxVz8HWfed3Nj7j9SR6KNVZXiSZyxGToGtK6zHuzcWGD89_OF8.mp4?_nc_cat=102&_nc_sid=b66105&_nc_ht=video-sin2-1.xx.fbcdn.net&_nc_ohc=OtaJ7tPMWGIQ7kNvwFEdHKk&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5WSV9VU0VDQVNFX1BST0RVQ1RfVFlQRS4uQzMuMTI4MC5kYXNoX2gyNjQtYmFzaWMtZ2VuMl83MjBwIiwieHB2X2Fzc2V0X2lkIjoxNzgzMjE2Nzc2MDAyMjc1LCJhc3NldF9hZ2VfZGF5cyI6MCwidmlfdXNlY2FzZV9pZCI6MTA5ODAsImR1cmF0aW9uX3MiOjUsInVybGdlbl9zb3VyY2UiOiJ3d3cifQ%3D%3D&ccb=17-1&vs=6d11db9a48bc03cb&_nc_vs=HBkcFQIYQGZiX3Blcm1hbmVudC83QTRGNDNCODY5RUYyMDZCOTNGQUY0QkIyRjkyQUZBMl92aWRlb19kYXNoaW5pdC5tcDQVAALIARIAKAAYABsCiAd1c2Vfb2lsATEScHJvZ3Jlc3NpdmVfcmVjaXBlATEVAAAmxuvtp_D0qgYVAigCQzMsF0AUVP3ztkWiGBlkYXNoX2gyNjQtYmFzaWMtZ2VuMl83MjBwEQB1AGXIqwEA&_nc_gid=SkQJRkfnyryKstHmGfxA3w&_nc_ss=702a8&_nc_zt=28&oh=00_AQEqBUx7uOPLu0dly8lBdJrHZsEQ2JyMMG8ovplSGBgwIQ&oe=6A7805DF",
+"imageHandle": null,
+"videoHandle": null,
+"prompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"imagePrompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"videoPrompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"isFavorited": false,
+"isLoading": false,
+"error": null,
+"createdAt": "2026-08-04T18:49:14.000Z",
+"batchId": "batch-019fce1b-bdce-7881-8057-d3a5347f266d",
+"structuredOutput": {
+"metadata": {
+"dimensions": {
+"width": 720,
+"height": 1280
+},
+"aspectRatio": "9:16"
+}
+},
+"orderIndex": 1,
+"hasUploadedAncestor": true,
+"mediaEntId": "1166390993234086",
+"data": {
+"videoGenEntId": "1166390993234086",
+"requestId": "www-1202d9ec-6fab-4152-9912-6ca8cbbaa910-56808b79-c647-4d50-add2-610a580b6917",
+"imageEntId": "1166369879902864"
+}
+},
+{
+"id": "de4427b6-347b-47e0-817b-4cfd7a773fa3",
+"projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b",
+"contentItemId": "batch-019fce1b-bdce-7881-8057-d3a5347f266d-content-2",
+"relationship": "created",
+"sourceProjectId": null,
+"isInTimeline": false,
+"addedAt": "2026-08-04T18:49:15.000Z",
+"type": "videos",
+"imageUrl": "https://scontent-sin6-3.xx.fbcdn.net/o1/v/t6/f2/m421/AQOXVucHN1Iuhcj6zNU83rhEY2YWFtxyYTaJfsGAFXF-BEzlGfRbayY88lDNfu3GIypx146BUjpU0jpLKNfuSYth6rNo?_nc_cat=110&_nc_sid=5b3566&_nc_ht=scontent-sin6-3.xx.fbcdn.net&_nc_ohc=x8DeieiKCAAQ7kNvwE-gC1b&ccb=17-1&_nc_gid=dF9LBfx0adz4mlFGktDipA&_nc_zt=14&_nc_ss=70289&oh=00_AQEQ7HD7B_v1QTl_uUFRvdLa5WwppVIu61WrE5icMkDSXA&oe=6A999B2A",
+"videoUrl": "https://video-sin6-2.xx.fbcdn.net/o1/v/t2/f2/m412/AQMkrxDcyTUBDUGiX0s3XvuLOkiu_NU8MGf4C-5P8TBAjDw8M6Wx7qigLO8LBkKO7iKew53_vyjNFKyyh-B-AvKdyP8xJPfjvzVo-Q8.mp4?_nc_cat=109&_nc_sid=b66105&_nc_ht=video-sin6-2.xx.fbcdn.net&_nc_ohc=LUn_CxiDbXoQ7kNvwGphidg&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5WSV9VU0VDQVNFX1BST0RVQ1RfVFlQRS4uQzMuMTI4MC5kYXNoX2gyNjQtYmFzaWMtZ2VuMl83MjBwIiwieHB2X2Fzc2V0X2lkIjo3OTQxMzM1NDcwOTQ3OTMsImFzc2V0X2FnZV9kYXlzIjowLCJ2aV91c2VjYXNlX2lkIjoxMDk4MCwiZHVyYXRpb25fcyI6NSwidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=c02dccd5070b8775&_nc_vs=HBkcFQIYQGZiX3Blcm1hbmVudC8zQjQ4MjUwQzkxRjM1MDI1MEY5RjI0MjRFMUJEMjk5Ml92aWRlb19kYXNoaW5pdC5tcDQVAALIARIAKAAYABsCiAd1c2Vfb2lsATEScHJvZ3Jlc3NpdmVfcmVjaXBlATEVAAAmkszU_9OQ6QIVAigCQzMsF0AUVP3ztkWiGBlkYXNoX2gyNjQtYmFzaWMtZ2VuMl83MjBwEQB1AGXIqwEA&_nc_gid=SkQJRkfnyryKstHmGfxA3w&_nc_ss=702a8&_nc_zt=28&oh=00_AQH43g0jwYex-_PCquPGQp8g9Tx8ni3PhalLQ30x6fExww&oe=6A781926",
+"imageHandle": null,
+"videoHandle": null,
+"prompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"imagePrompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"videoPrompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"isFavorited": false,
+"isLoading": false,
+"error": null,
+"createdAt": "2026-08-04T18:49:14.000Z",
+"batchId": "batch-019fce1b-bdce-7881-8057-d3a5347f266d",
+"structuredOutput": {
+"metadata": {
+"dimensions": {
+"width": 720,
+"height": 1280
+},
+"aspectRatio": "9:16"
+}
+},
+"orderIndex": 2,
+"hasUploadedAncestor": true,
+"mediaEntId": "1166391026567416",
+"data": {
+"videoGenEntId": "1166391026567416",
+"requestId": "www-1202d9ec-6fab-4152-9912-6ca8cbbaa910-d6f19906-ff12-4689-8ed0-f50c49817e09",
+"imageEntId": "1166369879902864"
+}
+},
+{
+"id": "a487d207-c8ab-4f33-aceb-4702992b756c",
+"projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b",
+"contentItemId": "batch-019fce1b-bdce-7881-8057-d3a5347f266d-content-3",
+"relationship": "created",
+"sourceProjectId": null,
+"isInTimeline": false,
+"addedAt": "2026-08-04T18:49:15.000Z",
+"type": "videos",
+"imageUrl": "https://scontent-sin6-3.xx.fbcdn.net/o1/v/t6/f2/m421/AQOXVucHN1Iuhcj6zNU83rhEY2YWFtxyYTaJfsGAFXF-BEzlGfRbayY88lDNfu3GIypx146BUjpU0jpLKNfuSYth6rNo?_nc_cat=110&_nc_sid=5b3566&_nc_ht=scontent-sin6-3.xx.fbcdn.net&_nc_ohc=x8DeieiKCAAQ7kNvwE-gC1b&ccb=17-1&_nc_gid=dF9LBfx0adz4mlFGktDipA&_nc_zt=14&_nc_ss=70289&oh=00_AQEQ7HD7B_v1QTl_uUFRvdLa5WwppVIu61WrE5icMkDSXA&oe=6A999B2A",
+"videoUrl": "https://video-sin11-1.xx.fbcdn.net/o1/v/t2/f2/m412/AQMUBDFtX9bzGqRhmK0Nu7YSLEidWyz7ssNQ4HjXtSNuT01zl30Zo6w1ZGI2Yw-T1PKZs3MJFYMsLWbZRqHmXpvDEJBLp4OVyIg_2hQ.mp4?_nc_cat=105&_nc_sid=b66105&_nc_ht=video-sin11-1.xx.fbcdn.net&_nc_ohc=2MRqacmME5EQ7kNvwEBY1Ep&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5WSV9VU0VDQVNFX1BST0RVQ1RfVFlQRS4uQzMuMTI4MC5kYXNoX2gyNjQtYmFzaWMtZ2VuMl83MjBwIiwieHB2X2Fzc2V0X2lkIjoxNTM2ODI0NDY3NzUxMzc2LCJhc3NldF9hZ2VfZGF5cyI6MCwidmlfdXNlY2FzZV9pZCI6MTA5ODAsImR1cmF0aW9uX3MiOjUsInVybGdlbl9zb3VyY2UiOiJ3d3cifQ%3D%3D&ccb=17-1&vs=a1ea2bdb9bcdb489&_nc_vs=HBkcFQIYQGZiX3Blcm1hbmVudC80NTQ3NUIyREE2ODU2RUU3RDdERUEwMUY4QkI4MEZCRF92aWRlb19kYXNoaW5pdC5tcDQVAALIARIAKAAYABsCiAd1c2Vfb2lsATEScHJvZ3Jlc3NpdmVfcmVjaXBlATEVAAAmoIfcx_ruugUVAigCQzMsF0AUVP3ztkWiGBlkYXNoX2gyNjQtYmFzaWMtZ2VuMl83MjBwEQB1AGXIqwEA&_nc_gid=SkQJRkfnyryKstHmGfxA3w&_nc_ss=702a8&_nc_zt=28&oh=00_AQHOQxRl_yZW9aosfRFp6Bka-6OgwLwMJ86NK2uIXHyfBQ&oe=6A77F476",
+"imageHandle": null,
+"videoHandle": null,
+"prompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"imagePrompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"videoPrompt": "Fully animated hand-cut documentary paper collage on aged bone-white newsprint and archival map fragments over a charcoal black background. Circa 1660 along the banks of the Krishna River outside a village, wet muddy ground after rain, laborers actively digging, washing, and sifting mud by hand, with horseback guards watching over them. Black and white halftone photograph cutouts with rough scissor-cut edges, amber thread, brass pins, visible print grain and paper fiber, flat documentary lighting with soft cutout drop shadows, desaturated archival palette of bone white, ink black, halftone gray, amber, and muted ochre.",
+"isFavorited": false,
+"isLoading": false,
+"error": null,
+"createdAt": "2026-08-04T18:49:14.000Z",
+"batchId": "batch-019fce1b-bdce-7881-8057-d3a5347f266d",
+"structuredOutput": {
+"metadata": {
+"dimensions": {
+"width": 720,
+"height": 1280
+},
+"aspectRatio": "9:16"
+}
+},
+"orderIndex": 3,
+"hasUploadedAncestor": true,
+"mediaEntId": "1166390996567419",
+"data": {
+"videoGenEntId": "1166390996567419",
+"requestId": "www-1202d9ec-6fab-4152-9912-6ca8cbbaa910-b46bab0e-b73f-400b-8182-c7ed0111150c",
+"imageEntId": "1166369879902864"
+}
+},
+{
+"id": "99f09466-d868-4ae3-8f07-46abbcdd99a1",
+"projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b",
+"contentItemId": "R-87pwHcew94UWVW5pDpk",
+"relationship": "uploaded",
+"sourceProjectId": null,
+"isInTimeline": false,
+"addedAt": "2026-08-04T18:41:07.000Z",
+"type": "images",
+"imageUrl": "https://scontent-sin2-1.xx.fbcdn.net/o1/v/t6/f2/m421/AQOafrMGAnyGC6eFG__ImH6hAxWXNdsa_Sc7VW-LwwNAp5g4y8Rj33k63TTu-_jA7Ul1UMT9CL_pkDsFZcJ6fq-QzlDJ?_nc_cat=102&_nc_sid=5b3566&_nc_ht=scontent-sin2-1.xx.fbcdn.net&_nc_ohc=VaIFstZn3j4Q7kNvwGpMaxR&ccb=17-1&_nc_gid=dF9LBfx0adz4mlFGktDipA&_nc_zt=14&_nc_ss=70289&oh=00_AQGbk102xsmkFSXLVGZF4cUAEX8VWNlNe0uRsxHgtACcOQ&oe=6A999B6A",
+"videoUrl": null,
+"imageHandle": null,
+"videoHandle": null,
+"prompt": "Gemini_Generated_Image_c4n3b3c4n3b3c4n3.png",
+"imagePrompt": null,
+"videoPrompt": null,
+"isFavorited": false,
+"isLoading": false,
+"error": null,
+"createdAt": "2026-08-04T18:41:06.000Z",
+"batchId": "uwNyUNhFjnW6Fu_SAPTka",
+"structuredOutput": {
+"metadata": {
+"dimensions": {
+"width": 1280,
+"height": 720
+},
+"aspectRatio": "16:9"
+}
+},
+"orderIndex": 0,
+"hasUploadedAncestor": true,
+"mediaEntId": "1166380623235123",
+"data": null
+},
+{
+"id": "70e5c5dd-a8ef-4893-98ae-6f2d15c94a3d",
+"projectId": "7a0f777a-d069-4b4b-8aa2-7560fe351c4b",
+"contentItemId": "saJw7zOwlqNnzbGhfO12e",
+"relationship": "uploaded",
+"sourceProjectId": null,
+"isInTimeline": false,
+"addedAt": "2026-08-04T18:32:26.000Z",
+"type": "images",
+"imageUrl": "https://scontent-sin6-3.xx.fbcdn.net/o1/v/t6/f2/m421/AQOXVucHN1Iuhcj6zNU83rhEY2YWFtxyYTaJfsGAFXF-BEzlGfRbayY88lDNfu3GIypx146BUjpU0jpLKNfuSYth6rNo?_nc_cat=110&_nc_sid=5b3566&_nc_ht=scontent-sin6-3.xx.fbcdn.net&_nc_ohc=x8DeieiKCAAQ7kNvwE-gC1b&ccb=17-1&_nc_gid=dF9LBfx0adz4mlFGktDipA&_nc_zt=14&_nc_ss=70289&oh=00_AQEQ7HD7B_v1QTl_uUFRvdLa5WwppVIu61WrE5icMkDSXA&oe=6A999B2A",
+"videoUrl": null,
+"imageHandle": null,
+"videoHandle": null,
+"prompt": "Gemini_Generated_Image_auclocauclocaucl.png",
+"imagePrompt": null,
+"videoPrompt": null,
+"isFavorited": false,
+"isLoading": false,
+"error": null,
+"createdAt": "2026-08-04T18:32:24.000Z",
+"batchId": "R3xTKL_bwZZ1om9r0O48p",
+"structuredOutput": {
+"metadata": {
+"dimensions": {
+"width": 1280,
+"height": 720
+},
+"aspectRatio": "16:9"
+}
+},
+"orderIndex": 0,
+"hasUploadedAncestor": true,
+"mediaEntId": "1166369879902864",
+"data": null
+}
+],
+"count": 11
+}
