@@ -13,7 +13,7 @@ fetch("https://vibes.ai/api/projects/7a0f777a-d069-4b4b-8aa2-7560fe351c4b/batche
 "sec-fetch-mode": "cors",
 "sec-fetch-site": "same-origin",
 "sentry-trace": "c61c3ab83ead4a66ae4c7ad8a3748742-a0ed237b13e8ab1c-0",
-"cookie": "cookie_ack=true; meta_session=3c4878b0-9862-4315-877b-d8b3779b1f23.68qi4n9QuToiRQE2IouZ3HkdPGE2ypdPXc8nWnJ4sTQ",
+"cookie": "cookie_ack=true; meta_session=YOUR_COOKIE",
 "Referer": "https://vibes.ai/projects/7a0f777a-d069-4b4b-8aa2-7560fe351c4b"
 },
 "body": null,

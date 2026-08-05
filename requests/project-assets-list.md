@@ -13,7 +13,7 @@ fetch("https://vibes.ai/api/project-assets?limit=50&offset=0&project_id=7a0f777a
 "sec-fetch-mode": "cors",
 "sec-fetch-site": "same-origin",
 "sentry-trace": "f4e74971361b46ae8ecd62780788f713-9c05ee8c3c46e7dc-0",
-"cookie": "cookie_ack=true; meta_session=3c4878b0-9862-4315-877b-d8b3779b1f23.68qi4n9QuToiRQE2IouZ3HkdPGE2ypdPXc8nWnJ4sTQ",
+"cookie": "cookie_ack=true; meta_session=YOUR_COOKIE",
 "Referer": "https://vibes.ai/projects/7a0f777a-d069-4b4b-8aa2-7560fe351c4b"
 },
 "body": null,

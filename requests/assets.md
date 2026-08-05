@@ -14,7 +14,7 @@ fetch("https://vibes.ai/api/projects/7a0f777a-d069-4b4b-8aa2-7560fe351c4b/assets
 "sec-fetch-mode": "cors",
 "sec-fetch-site": "same-origin",
 "sentry-trace": "b675ca0c8a2c48af9f9f1025490d0b02-bc5aa328bdb41080-1",
-"cookie": "cookie_ack=true; meta_session=3c4878b0-9862-4315-877b-d8b3779b1f23.68qi4n9QuToiRQE2IouZ3HkdPGE2ypdPXc8nWnJ4sTQ",
+"cookie": "cookie_ack=true; meta_session=YOUR_COOKIE",
 "Referer": "https://vibes.ai/projects/7a0f777a-d069-4b4b-8aa2-7560fe351c4b/content/batch-019fce1b-bdce-7881-8057-d3a5347f266d-content-0"
 },
 "body": null,

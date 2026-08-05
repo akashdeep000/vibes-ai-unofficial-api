@@ -15,7 +15,7 @@ fetch("https://vibes.ai/api/projects?limit=25&offset=0&sort=newest", {
 "sec-fetch-mode": "cors",
 "sec-fetch-site": "same-origin",
 "sentry-trace": "a32cf806961822cf1bc8e45d53a7b1bc-9da9e6fa8a9950c4-0",
-"cookie": "cookie_ack=true; meta_session=3c4878b0-9862-4315-877b-d8b3779b1f23.68qi4n9QuToiRQE2IouZ3HkdPGE2ypdPXc8nWnJ4sTQ",
+"cookie": "cookie_ack=true; meta_session=YOUR_COOKIE",
 "Referer": "https://vibes.ai/"
 },
 "body": null,

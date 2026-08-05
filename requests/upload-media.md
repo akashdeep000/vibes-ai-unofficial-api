@@ -71,7 +71,7 @@ content-length
 content-type
 multipart/form-data; boundary=----WebKitFormBoundaryIWL37UYSmjdh8tpd
 cookie
-cookie_ack=true; meta_session=3c4878b0-9862-4315-877b-d8b3779b1f23.68qi4n9QuToiRQE2IouZ3HkdPGE2ypdPXc8nWnJ4sTQ
+cookie_ack=true; meta_session=YOUR_COOKIE
 origin
 https://vibes.ai
 priority

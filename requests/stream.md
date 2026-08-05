@@ -3,7 +3,7 @@
 fetch("https://vibes.ai/api/generation-batches/batch-019fcec1-8e34-7944-ab8f-32aa099bd04a/stream", {
 "headers": {
 "accept": "text/event-stream",
-"cookie": "cookie_ack=true; meta_session=3c4878b0-9862-4315-877b-d8b3779b1f23.68qi4n9QuToiRQE2IouZ3HkdPGE2ypdPXc8nWnJ4sTQ"
+"cookie": "cookie_ack=true; meta_session=YOUR_COOKIE"
 },
 "body": null,
 "method": "GET"

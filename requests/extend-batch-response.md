@@ -3,7 +3,7 @@
 fetch("https://vibes.ai/api/generation-batches/extend-1785885630213-23897e52", {
 "headers": {
 "accept": "application/json",
-"cookie": "cookie_ack=true; meta_session=3c4878b0-9862-4315-877b-d8b3779b1f23.68qi4n9QuToiRQE2IouZ3HkdPGE2ypdPXc8nWnJ4sTQ",
+"cookie": "cookie_ack=true; meta_session=YOUR_COOKIE",
 "Referer": "https://vibes.ai/projects/5a8d1d55-995c-4bc5-9136-e348d7cbcf6f"
 },
 "method": "GET"
