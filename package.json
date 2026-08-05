@@ -52,7 +52,7 @@
     "vitest": "^2.1.8"
   },
   "allowScripts": {
-    "vibes-ai": true,
+
     "esbuild@0.27.7": true,
     "esbuild@0.28.1": true,
     "esbuild@0.21.5": true

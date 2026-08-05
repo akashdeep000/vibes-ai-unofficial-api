@@ -1,5 +1,5 @@
 node_modules/
-dist/
+# dist/ committed to support git-installs on hardened npm
 coverage/
 .env
 .env.*
