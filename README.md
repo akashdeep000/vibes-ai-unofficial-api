@@ -14,10 +14,12 @@ batch completion.
 ## Install
 
 ```bash
-npm install vibes-ai
+npm install vibes-ai                          # when published to the registry
+npm install git+https://github.com/akashdeep000/vibes-ai-unofficial-api.git
 ```
 
-Requires Node >= 18.17.
+The git install ships a pre-built `dist/` in the repository, so it works even on
+npm setups that restrict dependency install scripts. Requires Node >= 18.17.
 
 ## Authentication
 
