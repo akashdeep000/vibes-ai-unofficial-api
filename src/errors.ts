@@ -8,6 +8,16 @@ export class VibesError extends Error {
   }
 }
 
+/**
+ * Thrown when the session cookie cannot be obtained from the configured source
+ * (manual string, cookie file, or browser sync).
+ */
+export class VibesAuthError extends VibesError {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+
 /** Thrown when the API responds with a non-2xx status. */
 export class VibesHttpError extends VibesError {
   readonly method: string;

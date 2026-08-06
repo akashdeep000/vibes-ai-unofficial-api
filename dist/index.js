@@ -49,6 +49,11 @@ var VibesError = class extends Error {
     this.name = new.target.name;
   }
 };
+var VibesAuthError = class extends VibesError {
+  constructor(message, options) {
+    super(message, options);
+  }
+};
 var VibesHttpError = class extends VibesError {
   method;
   url;
@@ -197,7 +202,7 @@ var HttpClient = class {
     }
     return url.toString();
   }
-  sessionCookie() {
+  async sessionCookie() {
     if (typeof this.#session === "function") return this.#session();
     return this.#session;
   }
@@ -208,7 +213,7 @@ var HttpClient = class {
       ...this.#headers,
       ...options.headers
     };
-    const cookie = this.sessionCookie();
+    const cookie = await this.sessionCookie();
     if (cookie) headers.cookie = cookie;
     if (options.json !== void 0) {
       headers["content-type"] = "application/json";
@@ -241,7 +246,7 @@ var HttpClient = class {
       accept: "text/event-stream",
       ...this.#headers
     };
-    const cookie = this.sessionCookie();
+    const cookie = await this.sessionCookie();
     if (cookie) headers.cookie = cookie;
     const expected = options.expectedStatus ?? isSuccessfulStatus;
     const signal = options.signal ?? this.#signal;
@@ -1684,6 +1689,144 @@ var VibesClient = class {
     this.contentItems = new ContentItemsResource(this.http);
   }
 };
+
+// src/auth/browser-session.ts
+import { spawnSync } from "child_process";
+import { existsSync } from "fs";
+import { homedir } from "os";
+import { join } from "path";
+import { getCookies } from "@steipete/sweet-cookie";
+var SESSION_URL = "https://vibes.ai/";
+var SESSION_NAMES = ["meta_session", "cookie_ack"];
+var DEFAULT_THROTTLE_MS = 5e3;
+var HELIUM_DB = join(homedir(), ".config", "net.imput.helium", "Default", "Cookies");
+var CHROMIUM_DB = join(homedir(), ".config", "chromium", "Default", "Cookies");
+var BRAVE_DB = join(homedir(), ".config", "BraveSoftware", "Brave-Browser", "Default", "Cookies");
+function autoCandidates() {
+  return [
+    // helium: Chromium fork, read through the chrome backend
+    { name: "helium", browser: "chrome", dbPath: HELIUM_DB },
+    { name: "chrome", browser: "chrome" },
+    // chromium/brave: Chromium forks, read through the chrome backend
+    { name: "chromium", browser: "chrome", dbPath: CHROMIUM_DB },
+    { name: "brave", browser: "chrome", dbPath: BRAVE_DB },
+    { name: "edge", browser: "edge" },
+    { name: "firefox", browser: "firefox" },
+    { name: "safari", browser: "safari" }
+  ];
+}
+function forkDbPath(kind) {
+  if (kind === "helium") return HELIUM_DB;
+  if (kind === "chromium") return CHROMIUM_DB;
+  if (kind === "brave") return BRAVE_DB;
+  return void 0;
+}
+async function syncSessionFromBrowser(cfg = {}) {
+  const kind = cfg.browser ?? process.env.VIBES_BROWSER;
+  const profileDir = cfg.profileDir ?? process.env.VIBES_PROFILE_DIR;
+  const readCookies = cfg.readCookies ?? defaultReadCookies;
+  const names = cfg.cookieNames ?? SESSION_NAMES;
+  const sessionName = names[0] ?? SESSION_NAMES[0];
+  let candidates;
+  if (profileDir) {
+    const dbPath = join(profileDir, "Default", "Cookies");
+    if (!existsSync(dbPath)) {
+      throw new VibesAuthError(`No cookie database at ${dbPath}.`);
+    }
+    candidates = [{ name: "profile", browser: "chrome", dbPath }];
+  } else if (kind) {
+    const dbPath = forkDbPath(kind);
+    if (dbPath && !existsSync(dbPath)) {
+      throw new VibesAuthError(`No cookie database at ${dbPath}.`);
+    }
+    candidates = [
+      {
+        name: kind,
+        browser: kind === "helium" || kind === "chromium" || kind === "brave" ? "chrome" : kind,
+        ...dbPath ? { dbPath } : {}
+      }
+    ];
+  } else {
+    candidates = autoCandidates();
+  }
+  if (cfg.verbose) {
+    const parts = candidates.map((c) => c.name);
+    const db = candidates[0]?.dbPath;
+    if (db) parts.push(db);
+    if (!profileDir && !kind) parts.push("(auto-detect)");
+    console.warn(`   [browser] ${parts.join(", ")}`);
+  }
+  setKeyringPassword();
+  let warnings = [];
+  for (const c of candidates) {
+    if (c.dbPath && !existsSync(c.dbPath)) {
+      warnings.push(`${c.name}: cookie database not found`);
+      if (cfg.verbose) console.warn(`   [browser] ${c.name}: cookie database not found`);
+      continue;
+    }
+    const res = await readCookies({
+      url: cfg.url ?? SESSION_URL,
+      names,
+      browsers: [c.browser],
+      ...c.dbPath ? { chromeProfile: c.dbPath } : {},
+      timeoutMs: 15e3
+    });
+    warnings = res.warnings;
+    if (cfg.verbose && warnings.length) {
+      for (const w of warnings) console.warn(`   [browser] ${w}`);
+    }
+    const picked = res.cookies.filter((c2) => c2.value.length > 0);
+    if (picked.some((c2) => c2.name === sessionName)) {
+      if (cfg.verbose && c.name !== candidates[0].name) {
+        console.warn(`   [browser] ${c.name} has the session cookie (fallback)`);
+      }
+      const ordered = [
+        ...picked.filter((c2) => c2.name === sessionName),
+        ...picked.filter((c2) => c2.name !== sessionName)
+      ];
+      return ordered.map((c2) => `${c2.name}=${c2.value}`).join("; ");
+    }
+  }
+  const why = warnings[0] ? ` (${warnings[0]})` : "";
+  throw new VibesAuthError(
+    `No vibes.ai session cookie (meta_session) in your browser${why}. Tried: ${candidates.map((c) => c.name).join(", ")}. Sign in to vibes.ai in your browser, or pass \`session\` explicitly.`
+  );
+}
+function browserSession(cfg = {}) {
+  const throttleMs = cfg.throttleMs ?? DEFAULT_THROTTLE_MS;
+  let cache;
+  return async () => {
+    const fromEnv = cfg.sessionFromEnv ?? process.env.VIBES_SESSION_COOKIE;
+    if (fromEnv) return fromEnv;
+    const now = Date.now();
+    if (cache && now - cache.at < throttleMs) return cache.header;
+    const header = await syncSessionFromBrowser(cfg);
+    cache = { at: Date.now(), header };
+    return header;
+  };
+}
+var defaultReadCookies = (opts) => getCookies({
+  url: opts.url,
+  names: [...opts.names],
+  browsers: [...opts.browsers],
+  ...opts.chromeProfile ? { chromeProfile: opts.chromeProfile } : {},
+  timeoutMs: opts.timeoutMs
+});
+var CHROMIUM_KEYRING_LABEL = "Chromium Safe Storage";
+var keyringLoaded = false;
+function setKeyringPassword() {
+  if (keyringLoaded) return;
+  keyringLoaded = true;
+  const r = spawnSync(
+    "secret-tool",
+    ["search", "--all", "xdg:schema", "chrome_libsecret_os_crypt_password_v2"],
+    { encoding: "utf8", timeout: 15e3 }
+  );
+  if (r.status !== 0 || !r.stdout) return;
+  const block = r.stdout.split(/\[\/\d+\]/).find((b) => b.includes(CHROMIUM_KEYRING_LABEL));
+  const secret = block?.match(/secret = (.+)/)?.[1];
+  if (secret) process.env.SWEET_COOKIE_CHROME_SAFE_STORAGE_PASSWORD = secret.trim();
+}
 export {
   API_BASE_URL,
   API_PREFIX,
@@ -1755,6 +1898,7 @@ export {
   UserSchema,
   UuidSchema,
   VIDEO_MODEL,
+  VibesAuthError,
   VibesClient,
   VibesError,
   VibesHttpError,
@@ -1763,12 +1907,14 @@ export {
   VibesValidationError,
   VideosResource,
   batchId,
+  browserSession,
   contentItemId,
   dimensionsToAspectRatio,
   extendBatchId,
   mgRequestId,
   parseFirstJsonObject,
   resolveAspectRatio,
+  syncSessionFromBrowser,
   uuidv7,
   waitFor,
   withRetry

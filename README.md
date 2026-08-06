@@ -19,23 +19,39 @@ npm install git+https://github.com/akashdeep000/vibes-ai-unofficial-api.git
 ```
 
 The git install ships a pre-built `dist/` in the repository, so it works even on
-npm setups that restrict dependency install scripts. Requires Node >= 18.17.
+npm setups that restrict dependency install scripts. Requires Node >= 22.
 
 ## Authentication
 
-The API is authenticated with your browser session cookie. Log in to
-vibes.ai, open DevTools → Network → any request, and copy the `cookie` header
-value (it contains `meta_session=...; cookie_ack=true`). Pass it to the client
-— either as a static string or a function that reads a fresh session
-(rotating sessions without recreating the client).
+The API is authenticated with your browser session cookie. `browserSession()`
+resolves the session in order:
+
+1. `VIBES_SESSION_COOKIE` env var — for servers / headless deployments (paste a
+   fresh cookie when it expires; no client recreation needed)
+2. Helium — your local browser session, read straight from its cookie database
+   (read-only copy — the browser can stay open)
+3. The other browsers, auto-detected (chrome → chromium → brave → edge →
+   firefox → safari)
+
+So the same code works on the server (env cookie) and locally (browser):
 
 ```ts
-import { VibesClient } from "vibes-ai";
+import { VibesClient, browserSession } from "vibes-ai";
 
-const client = new VibesClient({
-  session: () => readSessionFromEnv(), // or: "meta_session=...; cookie_ack=true"
-});
+const client = new VibesClient({ session: browserSession() });
 ```
+
+The env cookie is re-checked on every call, and browser sessions are refreshed
+automatically as they rotate (throttled to every 5s). Browsers are auto-detected
+(helium → chrome → chromium → brave → edge → firefox → safari); override with
+`browserSession({ browser: "firefox" })`, or point at a specific profile with
+`browserSession({ profileDir: "~/.config/..." })`. Sync failures throw
+`VibesAuthError` with a hint to sign in again.
+
+To manage the cookie manually instead — copy the `cookie` header from DevTools
+→ Network → any request (containing `meta_session=...; cookie_ack=true`) and
+pass it as a static string or a function (sync or async) that reads a fresh
+session, rotating without recreating the client:
 
 ## Quick start
 

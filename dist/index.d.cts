@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { BrowserName, Cookie } from '@steipete/sweet-cookie';
 
 /** Options controlling retry behaviour of the HTTP layer. */
 interface RetryOptions {
@@ -20,8 +21,11 @@ declare const DEFAULT_RETRY_OPTIONS: RetryOptions;
  */
 declare function withRetry<T>(fn: () => Promise<T>, options?: RetryOptions): Promise<T>;
 
-/** Supplies the session cookie; may be a static string or a function so the session can rotate. */
-type SessionProvider = string | (() => string | undefined);
+/**
+ * Supplies the session cookie; may be a static string or a function so the
+ * session can rotate. Functions may be async (e.g. a browser-sync provider).
+ */
+type SessionProvider = string | (() => string | undefined | Promise<string | undefined>);
 interface HttpClientOptions {
     /** Origin, e.g. "https://vibes.ai". Defaults to the platform. */
     baseUrl?: string;
@@ -8204,9 +8208,22 @@ type VibesClientOptions = HttpClientOptions;
 /**
  * Typed client for the unofficial vibes.ai API.
  *
- * Authentication is cookie-based: pass the browser session cookie string
+ * Authentication is cookie-based. The easiest source is the browser itself —
+ * `browserSession()` reads the `meta_session` cookie straight from your
+ * browser's cookie database (read-only; the browser can stay open) and keeps
+ * it fresh:
+ *
+ * @example
+ * ```ts
+ * const client = new VibesClient({
+ *   session: browserSession(),
+ * });
+ * ```
+ *
+ * Alternatively pass the browser session cookie string
  * (e.g. `meta_session=...; cookie_ack=true`) via `session`. The value can be
- * a function so the session can rotate without recreating the client.
+ * a function (sync or async) so the session can rotate without recreating the
+ * client.
  *
  * @example
  * ```ts
@@ -8230,9 +8247,73 @@ declare class VibesClient {
     constructor(options?: VibesClientOptions);
 }
 
+/** Browsers sweet-cookie knows + Chromium forks read through the chrome backend. */
+type BrowserKind = BrowserName | "helium" | "chromium" | "brave";
+interface BrowserSessionConfig {
+    /** Browser name for explicit single-source mode; auto-detect when unset. */
+    browser?: BrowserKind;
+    /** Chrome-profile dir with Default/Cookies (overrides browser). */
+    profileDir?: string;
+    /** Static session cookie checked before any browser sync (default: $VIBES_SESSION_COOKIE). */
+    sessionFromEnv?: string;
+    /** Log resolution steps to stderr. */
+    verbose?: boolean;
+    /** Cookie names to collect (default: meta_session + cookie_ack). */
+    cookieNames?: readonly string[];
+    /** Origin used for cookie filtering. Defaults to https://vibes.ai/. */
+    url?: string;
+    /** Minimum interval between two syncs (default 5000ms). */
+    throttleMs?: number;
+    /** Injectable cookie reader (used by tests). */
+    readCookies?: (opts: {
+        url: string;
+        names: readonly string[];
+        browsers: BrowserName[];
+        chromeProfile?: string;
+        timeoutMs: number;
+    }) => Promise<{
+        cookies: Cookie[];
+        warnings: string[];
+    }>;
+}
+/**
+ * Read the vibes.ai session cookie header straight from a browser's cookie
+ * database. Returns e.g. `meta_session=...; cookie_ack=true`.
+ *
+ * Throws `VibesAuthError` when no browser holds a `meta_session` cookie for
+ * vibes.ai — sign in to vibes.ai in your browser and retry.
+ */
+declare function syncSessionFromBrowser(cfg?: BrowserSessionConfig): Promise<string>;
+/**
+ * Session provider that resolves the vibes.ai session cookie in order:
+ *
+ *   1. `sessionFromEnv` / `$VIBES_SESSION_COOKIE` — static cookie for
+ *      servers and headless deployments; never re-read from the browser.
+ *   2. The browser chain (helium -> chrome -> chromium -> brave -> edge ->
+ *      firefox -> safari), refreshed from disk at most every `throttleMs`
+ *      (default 5s), so a rotated `meta_session` is picked up without
+ *      recreating the client.
+ *
+ * The same provider works on the server (env cookie) and locally (browser
+ * cookie).
+ *
+ * @example
+ * ```ts
+ * const client = new VibesClient({ session: browserSession() });
+ * ```
+ */
+declare function browserSession(cfg?: BrowserSessionConfig): () => Promise<string | undefined>;
+
 /** Error hierarchy for the vibes-ai client. */
 /** Base class for every error thrown by this library. */
 declare class VibesError extends Error {
+    constructor(message: string, options?: ErrorOptions);
+}
+/**
+ * Thrown when the session cookie cannot be obtained from the configured source
+ * (manual string, cookie file, or browser sync).
+ */
+declare class VibesAuthError extends VibesError {
     constructor(message: string, options?: ErrorOptions);
 }
 /** Thrown when the API responds with a non-2xx status. */
@@ -8396,4 +8477,4 @@ declare function dimensionsToAspectRatio(dimensions: Dimensions): AspectRatio;
  */
 declare function resolveAspectRatio(dimensions: Dimensions | undefined, requested: AspectRatio | undefined): AspectRatio;
 
-export { API_BASE_URL, API_PREFIX, ASPECT_RATIO, type AspectRatio, AspectRatioSchema, type Asset, AssetSchema, AssetsResource, type AssetsResponse, AssetsResponseSchema, AuthResource, type BatchContentItem, BatchContentItemSchema, type BatchCreateResponse, BatchCreateResponseSchema, type BatchGetResponse, BatchGetResponseSchema, type BatchListResponse, BatchListResponseSchema, type BatchSkeleton, BatchSkeletonSchema, type BatchStreamEvent, BatchStreamEventSchema, type BatchStreamItem, BatchStreamItemSchema, type BatchUpdatePayload, BatchUpdatePayloadSchema, type BatchUpdateResponse, BatchUpdateResponseSchema, BatchesResource, type BulkDeletePayload, BulkDeletePayloadSchema, type BulkDeleteResponse, BulkDeleteResponseSchema, CompositionSchema, type ContentItemId, ContentItemIdSchema, ContentItemsResource, DEFAULT_RETRY_OPTIONS, DEFAULT_VARIATION_COUNT, type DeleteProjectOptions, type Dimensions, DimensionsSchema, type DirectPromptImageHandle, DirectPromptImageHandleSchema, EXTEND_VIDEO_DURATION_INCREMENT_S, type EndFrame, type ExtendAndWaitResult, type ExtendGenerateInput, ExtendGenerateInputSchema, type ExtendGenerateOptions, type ExtendGenerateRequest, ExtendGenerateRequestSchema, type ExtendToDurationOptions, GENERATED_VIDEO_DURATION_S, GENERATION_TYPE, type GenerateAndWaitResult, type GenerateVideosResponse, GenerateVideosResponseSchema, type GenerationBatch, GenerationBatchSchema, type GenerationConfig, GenerationConfigSchema, HttpClient, type HttpClientOptions, IMAGE_MODEL, type ListBatchesOptions, type ListProjectAssetsOptions, type ListProjectsOptions, type MeResponse, MeResponseSchema, type MediaEntId, MediaEntIdSchema, type MediaReference, MediaReferenceSchema, MediaResource, POLL_DEFAULTS, PROMPT_MODEL, type Project, type ProjectAssetItem, ProjectAssetItemSchema, type ProjectAssetsResponse, ProjectAssetsResponseSchema, type ProjectCreateResponse, ProjectCreateResponseSchema, type ProjectDeleteResponse, ProjectDeleteResponseSchema, type ProjectListResponse, ProjectListResponseSchema, type ProjectPage, ProjectPageSchema, ProjectSchema, type ProjectSummary, ProjectSummarySchema, type ProjectUploadFile, ProjectUploadFileSchema, type ProjectUploadRequest, ProjectUploadRequestSchema, type ProjectUploadResponse, ProjectUploadResponseSchema, type ProjectUploadedContentItem, ProjectUploadedContentItemSchema, ProjectsResource, RESOLUTION, RETRY_DEFAULTS, type RequestOptions, type RetryOptions, SOURCE_ROLE, type SessionProvider, type SourceContentItemId, SourceContentItemIdSchema, type StartFrame, type StructuredOutput, StructuredOutputSchema, type SyncResponse, SyncResponseSchema, T2VBaseConfigSchema, T2VFrameConfigSchema, type T2VGenerateInput, T2VGenerateInputSchema, type T2VGenerateOptions, type T2VGenerateRequest, T2VGenerateRequestSchema, type UploadMediaOptions, type UploadMediaResponse, UploadMediaResponseSchema, type UploadableFile, type User, UserSchema, type Uuid, UuidSchema, VIDEO_MODEL, VibesClient, type VibesClientOptions, VibesError, VibesHttpError, VibesParseError, VibesPollTimeoutError, VibesValidationError, type VideoSource, VideosResource, type WaitForOptions, type WaitOptions, batchId, contentItemId, dimensionsToAspectRatio, extendBatchId, mgRequestId, parseFirstJsonObject, resolveAspectRatio, uuidv7, waitFor, withRetry };
+export { API_BASE_URL, API_PREFIX, ASPECT_RATIO, type AspectRatio, AspectRatioSchema, type Asset, AssetSchema, AssetsResource, type AssetsResponse, AssetsResponseSchema, AuthResource, type BatchContentItem, BatchContentItemSchema, type BatchCreateResponse, BatchCreateResponseSchema, type BatchGetResponse, BatchGetResponseSchema, type BatchListResponse, BatchListResponseSchema, type BatchSkeleton, BatchSkeletonSchema, type BatchStreamEvent, BatchStreamEventSchema, type BatchStreamItem, BatchStreamItemSchema, type BatchUpdatePayload, BatchUpdatePayloadSchema, type BatchUpdateResponse, BatchUpdateResponseSchema, BatchesResource, type BrowserSessionConfig, type BulkDeletePayload, BulkDeletePayloadSchema, type BulkDeleteResponse, BulkDeleteResponseSchema, CompositionSchema, type ContentItemId, ContentItemIdSchema, ContentItemsResource, DEFAULT_RETRY_OPTIONS, DEFAULT_VARIATION_COUNT, type DeleteProjectOptions, type Dimensions, DimensionsSchema, type DirectPromptImageHandle, DirectPromptImageHandleSchema, EXTEND_VIDEO_DURATION_INCREMENT_S, type EndFrame, type ExtendAndWaitResult, type ExtendGenerateInput, ExtendGenerateInputSchema, type ExtendGenerateOptions, type ExtendGenerateRequest, ExtendGenerateRequestSchema, type ExtendToDurationOptions, GENERATED_VIDEO_DURATION_S, GENERATION_TYPE, type GenerateAndWaitResult, type GenerateVideosResponse, GenerateVideosResponseSchema, type GenerationBatch, GenerationBatchSchema, type GenerationConfig, GenerationConfigSchema, HttpClient, type HttpClientOptions, IMAGE_MODEL, type ListBatchesOptions, type ListProjectAssetsOptions, type ListProjectsOptions, type MeResponse, MeResponseSchema, type MediaEntId, MediaEntIdSchema, type MediaReference, MediaReferenceSchema, MediaResource, POLL_DEFAULTS, PROMPT_MODEL, type Project, type ProjectAssetItem, ProjectAssetItemSchema, type ProjectAssetsResponse, ProjectAssetsResponseSchema, type ProjectCreateResponse, ProjectCreateResponseSchema, type ProjectDeleteResponse, ProjectDeleteResponseSchema, type ProjectListResponse, ProjectListResponseSchema, type ProjectPage, ProjectPageSchema, ProjectSchema, type ProjectSummary, ProjectSummarySchema, type ProjectUploadFile, ProjectUploadFileSchema, type ProjectUploadRequest, ProjectUploadRequestSchema, type ProjectUploadResponse, ProjectUploadResponseSchema, type ProjectUploadedContentItem, ProjectUploadedContentItemSchema, ProjectsResource, RESOLUTION, RETRY_DEFAULTS, type RequestOptions, type RetryOptions, SOURCE_ROLE, type SessionProvider, type SourceContentItemId, SourceContentItemIdSchema, type StartFrame, type StructuredOutput, StructuredOutputSchema, type SyncResponse, SyncResponseSchema, T2VBaseConfigSchema, T2VFrameConfigSchema, type T2VGenerateInput, T2VGenerateInputSchema, type T2VGenerateOptions, type T2VGenerateRequest, T2VGenerateRequestSchema, type UploadMediaOptions, type UploadMediaResponse, UploadMediaResponseSchema, type UploadableFile, type User, UserSchema, type Uuid, UuidSchema, VIDEO_MODEL, VibesAuthError, VibesClient, type VibesClientOptions, VibesError, VibesHttpError, VibesParseError, VibesPollTimeoutError, VibesValidationError, type VideoSource, VideosResource, type WaitForOptions, type WaitOptions, batchId, browserSession, contentItemId, dimensionsToAspectRatio, extendBatchId, mgRequestId, parseFirstJsonObject, resolveAspectRatio, syncSessionFromBrowser, uuidv7, waitFor, withRetry };

@@ -1,12 +1,13 @@
 {
   "name": "vibes-ai",
   "version": "0.1.0",
-  "description": "Unofficial typed client for the vibes.ai AI video generation API (text-to-video and extend).",
   "private": true,
+  "description": "Unofficial typed client for the vibes.ai AI video generation API (text-to-video and extend).",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "type": "module",
-  "engines": {
-    "node": ">=18.17"
-  },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -17,19 +18,16 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": [
-    "dist",
-    "README.md"
-  ],
   "scripts": {
     "build": "tsup",
+    "prepublishOnly": "npm run build",
     "prepare": "npm run build",
     "dev": "tsx watch src/index.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "lint": "oxlint --type-aware --tsconfig tsconfig.json --config .oxlintrc.json .",
+    "lint:fix": "oxlint --type-aware --tsconfig tsconfig.json --config .oxlintrc.json --fix . && oxfmt --write .",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:live": "VIBES_RUN_LIVE=1 vitest run test/live",
@@ -37,23 +35,22 @@
     "verify": "npm run typecheck && npm run lint && npm run format:check && npm run test"
   },
   "dependencies": {
+    "@steipete/sweet-cookie": "^0.4.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.17.0",
     "@types/node": "^22.10.2",
     "dotenv": "^17.4.2",
-    "eslint": "^9.17.0",
-    "prettier": "^3.4.2",
+    "oxfmt": "^0.62.0",
+    "oxlint": "^1.77.0",
+    "oxlint-tsgolint": "^7.0.2001",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "typescript-eslint": "^8.18.2",
     "vitest": "^2.1.8"
   },
-  "allowScripts": {
-    "esbuild@0.27.7": true,
-    "esbuild@0.28.1": true,
-    "esbuild@0.21.5": true
-  }
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@11.18.0"
 }

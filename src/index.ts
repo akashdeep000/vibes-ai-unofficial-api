@@ -5,6 +5,9 @@
 export { VibesClient } from "./client.js";
 export type { VibesClientOptions } from "./client.js";
 
+export { browserSession, syncSessionFromBrowser } from "./auth/browser-session.js";
+export type { BrowserSessionConfig } from "./auth/browser-session.js";
+
 export { HttpClient, parseFirstJsonObject } from "./http/http-client.js";
 export type { HttpClientOptions, RequestOptions, SessionProvider } from "./http/http-client.js";
 
@@ -32,6 +35,7 @@ export type {
 
 export {
   VibesError,
+  VibesAuthError,
   VibesHttpError,
   VibesValidationError,
   VibesParseError,

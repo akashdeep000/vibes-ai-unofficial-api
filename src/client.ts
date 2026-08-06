@@ -12,9 +12,22 @@ export type VibesClientOptions = HttpClientOptions;
 /**
  * Typed client for the unofficial vibes.ai API.
  *
- * Authentication is cookie-based: pass the browser session cookie string
+ * Authentication is cookie-based. The easiest source is the browser itself —
+ * `browserSession()` reads the `meta_session` cookie straight from your
+ * browser's cookie database (read-only; the browser can stay open) and keeps
+ * it fresh:
+ *
+ * @example
+ * ```ts
+ * const client = new VibesClient({
+ *   session: browserSession(),
+ * });
+ * ```
+ *
+ * Alternatively pass the browser session cookie string
  * (e.g. `meta_session=...; cookie_ack=true`) via `session`. The value can be
- * a function so the session can rotate without recreating the client.
+ * a function (sync or async) so the session can rotate without recreating the
+ * client.
  *
  * @example
  * ```ts

@@ -4,8 +4,11 @@ import { VibesHttpError, VibesParseError, VibesValidationError } from "../errors
 import { safeJsonParse } from "../utils/json.js";
 import { withRetry, type RetryOptions } from "../utils/retry.js";
 
-/** Supplies the session cookie; may be a static string or a function so the session can rotate. */
-export type SessionProvider = string | (() => string | undefined);
+/**
+ * Supplies the session cookie; may be a static string or a function so the
+ * session can rotate. Functions may be async (e.g. a browser-sync provider).
+ */
+export type SessionProvider = string | (() => string | undefined | Promise<string | undefined>);
 
 export interface HttpClientOptions {
   /** Origin, e.g. "https://vibes.ai". Defaults to the platform. */
@@ -105,7 +108,7 @@ export class HttpClient {
     return url.toString();
   }
 
-  private sessionCookie(): string | undefined {
+  private async sessionCookie(): Promise<string | undefined> {
     if (typeof this.#session === "function") return this.#session();
     return this.#session;
   }
@@ -118,7 +121,7 @@ export class HttpClient {
       ...options.headers,
     };
 
-    const cookie = this.sessionCookie();
+    const cookie = await this.sessionCookie();
     if (cookie) headers.cookie = cookie;
 
     if (options.json !== undefined) {
@@ -164,7 +167,7 @@ export class HttpClient {
       accept: "text/event-stream",
       ...this.#headers,
     };
-    const cookie = this.sessionCookie();
+    const cookie = await this.sessionCookie();
     if (cookie) headers.cookie = cookie;
 
     const expected = options.expectedStatus ?? isSuccessfulStatus;

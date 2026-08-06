@@ -10,7 +10,13 @@ import {
 
 /** Anything the multipart uploader accepts as file content. */
 export type UploadableFile =
-  Blob | File | Buffer | Uint8Array | ArrayBuffer | ReadableStream<Uint8Array> | string;
+  | Blob
+  | File
+  | Buffer
+  | Uint8Array
+  | ArrayBuffer
+  | ReadableStream<Uint8Array>
+  | string;
 
 export interface UploadMediaOptions {
   /** Filename sent in the multipart payload. */
