@@ -49,7 +49,7 @@ export const AssetSchema = z.object({
   data: z
     .object({
       videoGenEntId: MediaEntIdSchema.optional(),
-      requestId: z.string(),
+      requestId: z.string().optional(),
       imageEntId: MediaEntIdSchema.optional(),
     })
     .nullable()

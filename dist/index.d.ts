@@ -26,6 +26,14 @@ declare function withRetry<T>(fn: () => Promise<T>, options?: RetryOptions): Pro
  * session can rotate. Functions may be async (e.g. a browser-sync provider).
  */
 type SessionProvider = string | (() => string | undefined | Promise<string | undefined>);
+/**
+ * A session provider that can re-login on demand (e.g. `autoSession()`).
+ * When a request fails with 401 the client calls `refresh()` once and retries
+ * with the fresh cookie, so an expired session heals itself.
+ */
+type RefreshableSession = (() => string | undefined | Promise<string | undefined>) & {
+    refresh: () => Promise<string>;
+};
 interface HttpClientOptions {
     /** Origin, e.g. "https://vibes.ai". Defaults to the platform. */
     baseUrl?: string;
@@ -82,6 +90,8 @@ declare class HttpClient {
     private resolveUrl;
     private sessionCookie;
     request<T>(options: RequestOptions): Promise<T>;
+    private canRefresh;
+    private execute;
     /**
      * Opens a GET and hands every `Uint8Array` chunk of the body to
      * `onChunk` as it arrives. Used by the SSE batch-stream endpoint.
@@ -89,6 +99,7 @@ declare class HttpClient {
      * Resolves once the response body completes (or the signal aborts).
      */
     stream(options: StreamOptions): Promise<void>;
+    private openStream;
     private handleResponse;
     private tryJson;
 }
@@ -177,16 +188,16 @@ declare const AssetSchema: z.ZodObject<{
     mediaEntId: z.ZodNullable<z.ZodString>;
     data: z.ZodOptional<z.ZodNullable<z.ZodObject<{
         videoGenEntId: z.ZodOptional<z.ZodString>;
-        requestId: z.ZodString;
+        requestId: z.ZodOptional<z.ZodString>;
         imageEntId: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
-        requestId: string;
         imageEntId?: string | undefined;
         videoGenEntId?: string | undefined;
+        requestId?: string | undefined;
     }, {
-        requestId: string;
         imageEntId?: string | undefined;
         videoGenEntId?: string | undefined;
+        requestId?: string | undefined;
     }>>>;
 }, "strip", z.ZodTypeAny, {
     type: "videos" | "images";
@@ -223,9 +234,9 @@ declare const AssetSchema: z.ZodObject<{
         } | null | undefined;
     } | null | undefined;
     data?: {
-        requestId: string;
         imageEntId?: string | undefined;
         videoGenEntId?: string | undefined;
+        requestId?: string | undefined;
     } | null | undefined;
 }, {
     type: "videos" | "images";
@@ -262,9 +273,9 @@ declare const AssetSchema: z.ZodObject<{
         } | null | undefined;
     } | null | undefined;
     data?: {
-        requestId: string;
         imageEntId?: string | undefined;
         videoGenEntId?: string | undefined;
+        requestId?: string | undefined;
     } | null | undefined;
 }>;
 declare const AssetsResponseSchema: z.ZodObject<{
@@ -341,16 +352,16 @@ declare const AssetsResponseSchema: z.ZodObject<{
         mediaEntId: z.ZodNullable<z.ZodString>;
         data: z.ZodOptional<z.ZodNullable<z.ZodObject<{
             videoGenEntId: z.ZodOptional<z.ZodString>;
-            requestId: z.ZodString;
+            requestId: z.ZodOptional<z.ZodString>;
             imageEntId: z.ZodOptional<z.ZodString>;
         }, "strip", z.ZodTypeAny, {
-            requestId: string;
             imageEntId?: string | undefined;
             videoGenEntId?: string | undefined;
+            requestId?: string | undefined;
         }, {
-            requestId: string;
             imageEntId?: string | undefined;
             videoGenEntId?: string | undefined;
+            requestId?: string | undefined;
         }>>>;
     }, "strip", z.ZodTypeAny, {
         type: "videos" | "images";
@@ -387,9 +398,9 @@ declare const AssetsResponseSchema: z.ZodObject<{
             } | null | undefined;
         } | null | undefined;
         data?: {
-            requestId: string;
             imageEntId?: string | undefined;
             videoGenEntId?: string | undefined;
+            requestId?: string | undefined;
         } | null | undefined;
     }, {
         type: "videos" | "images";
@@ -426,9 +437,9 @@ declare const AssetsResponseSchema: z.ZodObject<{
             } | null | undefined;
         } | null | undefined;
         data?: {
-            requestId: string;
             imageEntId?: string | undefined;
             videoGenEntId?: string | undefined;
+            requestId?: string | undefined;
         } | null | undefined;
     }>, "many">;
     count: z.ZodNumber;
@@ -469,9 +480,9 @@ declare const AssetsResponseSchema: z.ZodObject<{
             } | null | undefined;
         } | null | undefined;
         data?: {
-            requestId: string;
             imageEntId?: string | undefined;
             videoGenEntId?: string | undefined;
+            requestId?: string | undefined;
         } | null | undefined;
     }[];
     count: number;
@@ -512,9 +523,9 @@ declare const AssetsResponseSchema: z.ZodObject<{
             } | null | undefined;
         } | null | undefined;
         data?: {
-            requestId: string;
             imageEntId?: string | undefined;
             videoGenEntId?: string | undefined;
+            requestId?: string | undefined;
         } | null | undefined;
     }[];
     count: number;
@@ -7281,8 +7292,25 @@ declare const BatchUpdatePayloadSchema: z.ZodObject<{
         videoHandle: z.ZodNullable<z.ZodUnknown>;
         imageUrl: z.ZodNullable<z.ZodString>;
         imageHandle: z.ZodNullable<z.ZodUnknown>;
-        /** Note: serialized as a JSON *string* in the PUT body. */
-        data: z.ZodNullable<z.ZodString>;
+        /**
+         * The gen metadata travels as an *object* in the PUT body. The
+         * platform now rejects stringified `data` (`Failed to update
+         * generation batch`); a trailing string case is kept only for
+         * payloads built from server responses that still serialize it.
+         */
+        data: z.ZodNullable<z.ZodUnion<[z.ZodObject<{
+            videoGenEntId: z.ZodOptional<z.ZodString>;
+            requestId: z.ZodOptional<z.ZodString>;
+            imageEntId: z.ZodOptional<z.ZodString>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            videoGenEntId: z.ZodOptional<z.ZodString>;
+            requestId: z.ZodOptional<z.ZodString>;
+            imageEntId: z.ZodOptional<z.ZodString>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            videoGenEntId: z.ZodOptional<z.ZodString>;
+            requestId: z.ZodOptional<z.ZodString>;
+            imageEntId: z.ZodOptional<z.ZodString>;
+        }, z.ZodTypeAny, "passthrough">>, z.ZodString, z.ZodNull]>>;
         error: z.ZodNullable<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
         type: "videos" | "images";
@@ -7291,7 +7319,11 @@ declare const BatchUpdatePayloadSchema: z.ZodObject<{
         id: string;
         isLoading: boolean;
         error: string | null;
-        data: string | null;
+        data: string | z.objectOutputType<{
+            videoGenEntId: z.ZodOptional<z.ZodString>;
+            requestId: z.ZodOptional<z.ZodString>;
+            imageEntId: z.ZodOptional<z.ZodString>;
+        }, z.ZodTypeAny, "passthrough"> | null;
         imageHandle?: unknown;
         videoHandle?: unknown;
     }, {
@@ -7301,7 +7333,11 @@ declare const BatchUpdatePayloadSchema: z.ZodObject<{
         id: string;
         isLoading: boolean;
         error: string | null;
-        data: string | null;
+        data: string | z.objectInputType<{
+            videoGenEntId: z.ZodOptional<z.ZodString>;
+            requestId: z.ZodOptional<z.ZodString>;
+            imageEntId: z.ZodOptional<z.ZodString>;
+        }, z.ZodTypeAny, "passthrough"> | null;
         imageHandle?: unknown;
         videoHandle?: unknown;
     }>, "many">;
@@ -7318,7 +7354,11 @@ declare const BatchUpdatePayloadSchema: z.ZodObject<{
         id: string;
         isLoading: boolean;
         error: string | null;
-        data: string | null;
+        data: string | z.objectOutputType<{
+            videoGenEntId: z.ZodOptional<z.ZodString>;
+            requestId: z.ZodOptional<z.ZodString>;
+            imageEntId: z.ZodOptional<z.ZodString>;
+        }, z.ZodTypeAny, "passthrough"> | null;
         imageHandle?: unknown;
         videoHandle?: unknown;
     }[];
@@ -7333,7 +7373,11 @@ declare const BatchUpdatePayloadSchema: z.ZodObject<{
         id: string;
         isLoading: boolean;
         error: string | null;
-        data: string | null;
+        data: string | z.objectInputType<{
+            videoGenEntId: z.ZodOptional<z.ZodString>;
+            requestId: z.ZodOptional<z.ZodString>;
+            imageEntId: z.ZodOptional<z.ZodString>;
+        }, z.ZodTypeAny, "passthrough"> | null;
         imageHandle?: unknown;
         videoHandle?: unknown;
     }[];
@@ -8124,8 +8168,19 @@ interface ExtendGenerateOptions {
 interface GenerateAndWaitResult {
     /** The batch as reported by the server once complete. */
     batch: GenerationBatch;
-    /** Completed video content items of the batch. */
+    /**
+     * Completed video content items of the batch. Contains only the first
+     * finished video unless `all` is set on the wait options.
+     */
     videos: BatchContentItem[];
+}
+/** Wait options for `generateAndWait` / `waitForBatch`. */
+interface WaitForBatchOptions extends WaitOptions {
+    /**
+     * Return every completed video of the batch — e.g. all 4 variations of a
+     * generation — instead of only the first one. Defaults to `false`.
+     */
+    all?: boolean;
 }
 interface ExtendAndWaitResult {
     /** The completed video asset, as reported by the assets endpoint. */
@@ -8174,7 +8229,7 @@ declare class VideosResource {
      * Generates videos from a start frame and polls until the batch completes.
      * Returns the completed batch and its finished video content items.
      */
-    generateAndWait(options: T2VGenerateOptions, poll?: WaitOptions): Promise<GenerateAndWaitResult>;
+    generateAndWait(options: T2VGenerateOptions, poll?: WaitForBatchOptions): Promise<GenerateAndWaitResult>;
     /**
      * Extends a video and polls until the new asset is ready.
      */
@@ -8190,9 +8245,39 @@ declare class VideosResource {
         totalDurationSeconds: number;
         extensions: number;
     }>;
-    /** Polls the generation-batches endpoint until the batch completes. */
-    waitForBatch(batchId: string, poll?: WaitOptions): Promise<GenerateAndWaitResult>;
-    /** Stream variant of `waitForBatch`: consumes SSE until the stream closes. */
+    /**
+     * Waits for a batch to finish and resolves its completed videos.
+     *
+     * Completion is event-driven: the SSE `/generation-batches/:id/stream`
+     * endpoint pushes item state and a terminal `isComplete: true` event (the
+     * web app listens the same way), so no polling is involved. Pass
+     * `poll.stream: false` to opt back into list-endpoint polling instead.
+     *
+     * By default only the first completed video is returned. Pass
+     * `poll.all: true` to receive every variation (a generation defaults to 4).
+     */
+    waitForBatch(projectId: string, batchId: string, poll?: WaitForBatchOptions): Promise<GenerateAndWaitResult>;
+    /**
+     * Waits until the given batch shows as complete (or errored) in the
+     * project's batch list.
+     *
+     * The single-batch `GET /api/generation-batches/:batchId` endpoint has been
+     * removed server-side (it returns 500), so tracking goes through
+     * `GET /api/projects/:projectId/batches` — the same endpoint the web app
+     * refreshes against.
+     */
+    private findCompletedBatch;
+    /**
+     * Event-driven wait: consumes the SSE `/generation-batches/:id/stream`
+     * endpoint until it emits `isComplete: true`.
+     *
+     * The server can drop the connection mid-flight (the web app's captures
+     * show it reconnecting), so a dropped/closed stream is reconnected with a
+     * short backoff until the batch reports complete or the deadline elapses.
+     * If the stream endpoint itself is unavailable (non-2xx), progress is
+     * tracked through the project's batch list instead. After the finalize PUT
+     * the finalized batch record is resolved (typically a single fetch).
+     */
     private waitForBatchStream;
     /**
      * Waits for the batch to finish, finalizes it (PUT), then resolves the
@@ -8234,6 +8319,17 @@ type VibesClientOptions = HttpClientOptions;
  * const { user } = await client.auth.me();
  * const { project } = await client.projects.create("My movie");
  * ```
+ *
+ * Zero easiest of login option: mint and maintained sessions without browser
+ * browser: `autoSession()` reads the Meta account cookies from the local
+ * browser (via C OIDC dance), mints a fresh `meta_session` in a headless
+ * Chromium and caches the session to disk (`~/.vibes-session.json`) — a 401
+ * triggers one re-login automatically:
+ *
+ * @example
+ * ```ts
+ * const client = new VibesClient({ session: autoSession() });
+ * ```
  */
 declare class VibesClient {
     readonly http: HttpClient;
@@ -8245,6 +8341,26 @@ declare class VibesClient {
     readonly videos: VideosResource;
     readonly contentItems: ContentItemsResource;
     constructor(options?: VibesClientOptions);
+}
+
+/**
+ * Headless-Chromium login via the raw DevTools Protocol (CDP) — zero
+ * dependencies; rides Node's native `WebSocket` (Node 22+).
+ *
+ * Why a real browser when the flow is "just" four redirects? Meta's edge
+ * rejects non-Chrome TLS/HTTP-2 fingerprints at `auth.meta.com/oidc`
+ * (curl and node fetch both get a canned 400 even with valid cookies), so the
+ * redirect dance runs inside a headless Chromium instance instead.
+ *
+ * Lifecycle: launch with a throwaway profile → plant the Meta cookies read by
+ * `browser-session.ts` → navigate the OIDC start URL → once the final page
+ * loads, take `meta_session` from the jar → close the browser.
+ */
+interface PlantedCookie {
+    name: string;
+    value: string;
+    /** Origin the cookie is planted for, e.g. "https://auth.meta.com/". */
+    url: string;
 }
 
 /** Browsers sweet-cookie knows + Chromium forks read through the chrome backend. */
@@ -8284,6 +8400,22 @@ interface BrowserSessionConfig {
  * vibes.ai — sign in to vibes.ai in your browser and retry.
  */
 declare function syncSessionFromBrowser(cfg?: BrowserSessionConfig): Promise<string>;
+/** Which browser/profile produced the cookies (e.g. a copyable cookie DB). */
+interface BrowserCookieSource {
+    name: string;
+    dbPath?: string;
+}
+interface BrowserCookies {
+    /** Ready-to-send Cookie header (`name=value; …`). */
+    header: string;
+    cookies: Cookie[];
+    source: BrowserCookieSource;
+}
+/**
+ * Like `syncSessionFromBrowser`, but returns the read result — used by
+ * `auto-login.ts`, which forwards the cookies to the login browser.
+ */
+declare function readCookiesFromBrowser(cfg?: BrowserSessionConfig): Promise<BrowserCookies>;
 /**
  * Session provider that resolves the vibes.ai session cookie in order:
  *
@@ -8303,6 +8435,52 @@ declare function syncSessionFromBrowser(cfg?: BrowserSessionConfig): Promise<str
  * ```
  */
 declare function browserSession(cfg?: BrowserSessionConfig): () => Promise<string | undefined>;
+
+declare const DEFAULT_SESSION_FILE = ".vibes-session.json";
+interface AutoSessionOptions {
+    /** Static session cookie checked before any login (default: $VIBES_SESSION_COOKIE). */
+    sessionFromEnv?: string;
+    /** Where the minted session is cached (default: $VIBES_SESSION_FILE or ./.vibes-session.json). */
+    sessionFile?: string;
+    /** Origin, e.g. "https://vibes.ai". Defaults to the platform. */
+    baseUrl?: string;
+    /** Browser to read Meta cookies from; auto-detect when unset. */
+    browser?: BrowserKind;
+    /** Chrome-profile dir with Default/Cookies (overrides browser). */
+    profileDir?: string;
+    /** Chromium binary used for the login flow (default: $VIBES_BROWSER_BINARY or autodetect). */
+    browserBinary?: string;
+    /** Injectable fetch (used by tests and alternative runtimes). */
+    fetchImpl?: typeof fetch;
+    /** Injectable cookie reader (used by tests). */
+    readCookies?: BrowserSessionConfig["readCookies"];
+    /** Injectable browser login (used by tests). */
+    loginBrowser?: (opts: {
+        startUrl: string;
+        landingUrlPrefix: string;
+        cookiesForUrl: string;
+        cookies: PlantedCookie[];
+    }) => Promise<string>;
+    /** Log resolution steps to stderr. */
+    verbose?: boolean;
+}
+interface LoginResult {
+    /** Ready-to-send session cookie (`meta_session=…; cookie_ack=true`). */
+    cookie: string;
+    /** The signed-in user, fetched once to prove the session works. */
+    user: User;
+}
+/**
+ * A session provider with self-healing: `VibesClient` calls `refresh()` once
+ * on a 401 and retries with the fresh cookie.
+ */
+type AutoSession = (() => Promise<string>) & {
+    refresh: () => Promise<string>;
+};
+/** Mint a fresh vibes.ai session: Meta cookies from the browser -> CDP login. */
+declare function login(opts?: AutoSessionOptions): Promise<LoginResult>;
+/** One-liner self-healing session provider for `VibesClient`. */
+declare function autoSession(opts?: AutoSessionOptions): AutoSession;
 
 /** Error hierarchy for the vibes-ai client. */
 /** Base class for every error thrown by this library. */
@@ -8477,4 +8655,4 @@ declare function dimensionsToAspectRatio(dimensions: Dimensions): AspectRatio;
  */
 declare function resolveAspectRatio(dimensions: Dimensions | undefined, requested: AspectRatio | undefined): AspectRatio;
 
-export { API_BASE_URL, API_PREFIX, ASPECT_RATIO, type AspectRatio, AspectRatioSchema, type Asset, AssetSchema, AssetsResource, type AssetsResponse, AssetsResponseSchema, AuthResource, type BatchContentItem, BatchContentItemSchema, type BatchCreateResponse, BatchCreateResponseSchema, type BatchGetResponse, BatchGetResponseSchema, type BatchListResponse, BatchListResponseSchema, type BatchSkeleton, BatchSkeletonSchema, type BatchStreamEvent, BatchStreamEventSchema, type BatchStreamItem, BatchStreamItemSchema, type BatchUpdatePayload, BatchUpdatePayloadSchema, type BatchUpdateResponse, BatchUpdateResponseSchema, BatchesResource, type BrowserSessionConfig, type BulkDeletePayload, BulkDeletePayloadSchema, type BulkDeleteResponse, BulkDeleteResponseSchema, CompositionSchema, type ContentItemId, ContentItemIdSchema, ContentItemsResource, DEFAULT_RETRY_OPTIONS, DEFAULT_VARIATION_COUNT, type DeleteProjectOptions, type Dimensions, DimensionsSchema, type DirectPromptImageHandle, DirectPromptImageHandleSchema, EXTEND_VIDEO_DURATION_INCREMENT_S, type EndFrame, type ExtendAndWaitResult, type ExtendGenerateInput, ExtendGenerateInputSchema, type ExtendGenerateOptions, type ExtendGenerateRequest, ExtendGenerateRequestSchema, type ExtendToDurationOptions, GENERATED_VIDEO_DURATION_S, GENERATION_TYPE, type GenerateAndWaitResult, type GenerateVideosResponse, GenerateVideosResponseSchema, type GenerationBatch, GenerationBatchSchema, type GenerationConfig, GenerationConfigSchema, HttpClient, type HttpClientOptions, IMAGE_MODEL, type ListBatchesOptions, type ListProjectAssetsOptions, type ListProjectsOptions, type MeResponse, MeResponseSchema, type MediaEntId, MediaEntIdSchema, type MediaReference, MediaReferenceSchema, MediaResource, POLL_DEFAULTS, PROMPT_MODEL, type Project, type ProjectAssetItem, ProjectAssetItemSchema, type ProjectAssetsResponse, ProjectAssetsResponseSchema, type ProjectCreateResponse, ProjectCreateResponseSchema, type ProjectDeleteResponse, ProjectDeleteResponseSchema, type ProjectListResponse, ProjectListResponseSchema, type ProjectPage, ProjectPageSchema, ProjectSchema, type ProjectSummary, ProjectSummarySchema, type ProjectUploadFile, ProjectUploadFileSchema, type ProjectUploadRequest, ProjectUploadRequestSchema, type ProjectUploadResponse, ProjectUploadResponseSchema, type ProjectUploadedContentItem, ProjectUploadedContentItemSchema, ProjectsResource, RESOLUTION, RETRY_DEFAULTS, type RequestOptions, type RetryOptions, SOURCE_ROLE, type SessionProvider, type SourceContentItemId, SourceContentItemIdSchema, type StartFrame, type StructuredOutput, StructuredOutputSchema, type SyncResponse, SyncResponseSchema, T2VBaseConfigSchema, T2VFrameConfigSchema, type T2VGenerateInput, T2VGenerateInputSchema, type T2VGenerateOptions, type T2VGenerateRequest, T2VGenerateRequestSchema, type UploadMediaOptions, type UploadMediaResponse, UploadMediaResponseSchema, type UploadableFile, type User, UserSchema, type Uuid, UuidSchema, VIDEO_MODEL, VibesAuthError, VibesClient, type VibesClientOptions, VibesError, VibesHttpError, VibesParseError, VibesPollTimeoutError, VibesValidationError, type VideoSource, VideosResource, type WaitForOptions, type WaitOptions, batchId, browserSession, contentItemId, dimensionsToAspectRatio, extendBatchId, mgRequestId, parseFirstJsonObject, resolveAspectRatio, syncSessionFromBrowser, uuidv7, waitFor, withRetry };
+export { API_BASE_URL, API_PREFIX, ASPECT_RATIO, type AspectRatio, AspectRatioSchema, type Asset, AssetSchema, AssetsResource, type AssetsResponse, AssetsResponseSchema, AuthResource, type AutoSession, type AutoSessionOptions, type BatchContentItem, BatchContentItemSchema, type BatchCreateResponse, BatchCreateResponseSchema, type BatchGetResponse, BatchGetResponseSchema, type BatchListResponse, BatchListResponseSchema, type BatchSkeleton, BatchSkeletonSchema, type BatchStreamEvent, BatchStreamEventSchema, type BatchStreamItem, BatchStreamItemSchema, type BatchUpdatePayload, BatchUpdatePayloadSchema, type BatchUpdateResponse, BatchUpdateResponseSchema, BatchesResource, type BrowserCookies, type BrowserSessionConfig, type BulkDeletePayload, BulkDeletePayloadSchema, type BulkDeleteResponse, BulkDeleteResponseSchema, CompositionSchema, type ContentItemId, ContentItemIdSchema, ContentItemsResource, DEFAULT_RETRY_OPTIONS, DEFAULT_SESSION_FILE, DEFAULT_VARIATION_COUNT, type DeleteProjectOptions, type Dimensions, DimensionsSchema, type DirectPromptImageHandle, DirectPromptImageHandleSchema, EXTEND_VIDEO_DURATION_INCREMENT_S, type EndFrame, type ExtendAndWaitResult, type ExtendGenerateInput, ExtendGenerateInputSchema, type ExtendGenerateOptions, type ExtendGenerateRequest, ExtendGenerateRequestSchema, type ExtendToDurationOptions, GENERATED_VIDEO_DURATION_S, GENERATION_TYPE, type GenerateAndWaitResult, type GenerateVideosResponse, GenerateVideosResponseSchema, type GenerationBatch, GenerationBatchSchema, type GenerationConfig, GenerationConfigSchema, HttpClient, type HttpClientOptions, IMAGE_MODEL, type ListBatchesOptions, type ListProjectAssetsOptions, type ListProjectsOptions, type LoginResult, type MeResponse, MeResponseSchema, type MediaEntId, MediaEntIdSchema, type MediaReference, MediaReferenceSchema, MediaResource, POLL_DEFAULTS, PROMPT_MODEL, type Project, type ProjectAssetItem, ProjectAssetItemSchema, type ProjectAssetsResponse, ProjectAssetsResponseSchema, type ProjectCreateResponse, ProjectCreateResponseSchema, type ProjectDeleteResponse, ProjectDeleteResponseSchema, type ProjectListResponse, ProjectListResponseSchema, type ProjectPage, ProjectPageSchema, ProjectSchema, type ProjectSummary, ProjectSummarySchema, type ProjectUploadFile, ProjectUploadFileSchema, type ProjectUploadRequest, ProjectUploadRequestSchema, type ProjectUploadResponse, ProjectUploadResponseSchema, type ProjectUploadedContentItem, ProjectUploadedContentItemSchema, ProjectsResource, RESOLUTION, RETRY_DEFAULTS, type RefreshableSession, type RequestOptions, type RetryOptions, SOURCE_ROLE, type SessionProvider, type SourceContentItemId, SourceContentItemIdSchema, type StartFrame, type StructuredOutput, StructuredOutputSchema, type SyncResponse, SyncResponseSchema, T2VBaseConfigSchema, T2VFrameConfigSchema, type T2VGenerateInput, T2VGenerateInputSchema, type T2VGenerateOptions, type T2VGenerateRequest, T2VGenerateRequestSchema, type UploadMediaOptions, type UploadMediaResponse, UploadMediaResponseSchema, type UploadableFile, type User, UserSchema, type Uuid, UuidSchema, VIDEO_MODEL, VibesAuthError, VibesClient, type VibesClientOptions, VibesError, VibesHttpError, VibesParseError, VibesPollTimeoutError, VibesValidationError, type VideoSource, VideosResource, type WaitForBatchOptions, type WaitForOptions, type WaitOptions, autoSession, batchId, browserSession, contentItemId, dimensionsToAspectRatio, extendBatchId, login, mgRequestId, parseFirstJsonObject, readCookiesFromBrowser, resolveAspectRatio, syncSessionFromBrowser, uuidv7, waitFor, withRetry };

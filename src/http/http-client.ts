@@ -10,6 +10,21 @@ import { withRetry, type RetryOptions } from "../utils/retry.js";
  */
 export type SessionProvider = string | (() => string | undefined | Promise<string | undefined>);
 
+/**
+ * A session provider that can re-login on demand (e.g. `autoSession()`).
+ * When a request fails with 401 the client calls `refresh()` once and retries
+ * with the fresh cookie, so an expired session heals itself.
+ */
+export type RefreshableSession = (() => string | undefined | Promise<string | undefined>) & {
+  refresh: () => Promise<string>;
+};
+
+function isRefreshable(session: SessionProvider | undefined): session is RefreshableSession {
+  return (
+    typeof session === "function" && typeof (session as RefreshableSession).refresh === "function"
+  );
+}
+
 export interface HttpClientOptions {
   /** Origin, e.g. "https://vibes.ai". Defaults to the platform. */
   baseUrl?: string;
@@ -114,6 +129,20 @@ export class HttpClient {
   }
 
   async request<T>(options: RequestOptions): Promise<T> {
+    try {
+      return await this.execute<T>(options);
+    } catch (error) {
+      if (!this.canRefresh(error)) throw error;
+      await (this.#session as RefreshableSession).refresh();
+      return this.execute<T>(options); // once more with the fresh session
+    }
+  }
+
+  private canRefresh(error: unknown): boolean {
+    return error instanceof VibesHttpError && error.status === 401 && isRefreshable(this.#session);
+  }
+
+  private async execute<T>(options: RequestOptions): Promise<T> {
     const url = this.resolveUrl(options.path, options.query);
     const headers: Record<string, string> = {
       accept: "application/json",
@@ -162,6 +191,16 @@ export class HttpClient {
    * Resolves once the response body completes (or the signal aborts).
    */
   async stream(options: StreamOptions): Promise<void> {
+    try {
+      await this.openStream(options);
+    } catch (error) {
+      if (!this.canRefresh(error)) throw error;
+      await (this.#session as RefreshableSession).refresh();
+      await this.openStream(options); // once more with the fresh session
+    }
+  }
+
+  private async openStream(options: StreamOptions): Promise<void> {
     const url = this.resolveUrl(options.path);
     const headers: Record<string, string> = {
       accept: "text/event-stream",

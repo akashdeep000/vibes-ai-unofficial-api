@@ -38,6 +38,17 @@ export type VibesClientOptions = HttpClientOptions;
  * const { user } = await client.auth.me();
  * const { project } = await client.projects.create("My movie");
  * ```
+ *
+ * Zero easiest of login option: mint and maintained sessions without browser
+ * browser: `autoSession()` reads the Meta account cookies from the local
+ * browser (via C OIDC dance), mints a fresh `meta_session` in a headless
+ * Chromium and caches the session to disk (`~/.vibes-session.json`) — a 401
+ * triggers one re-login automatically:
+ *
+ * @example
+ * ```ts
+ * const client = new VibesClient({ session: autoSession() });
+ * ```
  */
 export class VibesClient {
   readonly http: HttpClient;

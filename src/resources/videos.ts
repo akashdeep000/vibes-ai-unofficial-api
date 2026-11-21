@@ -32,12 +32,14 @@ import type { AssetsResource } from "./assets.js";
 import type { BatchesResource } from "./batches.js";
 import type {
   BatchContentItem,
-  BatchGetResponse,
+  BatchListResponse,
   BatchStreamEvent,
   BatchStreamItem,
   GenerationBatch,
 } from "../schemas/batches.js";
-import { VibesPollTimeoutError } from "../errors.js";
+import { VibesPollTimeoutError, VibesHttpError } from "../errors.js";
+import { safeJsonParse } from "../utils/json.js";
+import { sleep } from "../utils/sleep.js";
 
 /** A media reference usable as a start frame (an uploaded image). */
 export interface StartFrame {
@@ -123,8 +125,20 @@ export interface ExtendGenerateOptions {
 export interface GenerateAndWaitResult {
   /** The batch as reported by the server once complete. */
   batch: GenerationBatch;
-  /** Completed video content items of the batch. */
+  /**
+   * Completed video content items of the batch. Contains only the first
+   * finished video unless `all` is set on the wait options.
+   */
   videos: BatchContentItem[];
+}
+
+/** Wait options for `generateAndWait` / `waitForBatch`. */
+export interface WaitForBatchOptions extends WaitOptions {
+  /**
+   * Return every completed video of the batch — e.g. all 4 variations of a
+   * generation — instead of only the first one. Defaults to `false`.
+   */
+  all?: boolean;
 }
 
 export interface ExtendAndWaitResult {
@@ -219,10 +233,10 @@ export class VideosResource {
    */
   async generateAndWait(
     options: T2VGenerateOptions,
-    poll: WaitOptions = {},
+    poll: WaitForBatchOptions = {},
   ): Promise<GenerateAndWaitResult> {
     const submitted = await this.generateT2V(options);
-    return this.waitForBatch(submitted.batchId, poll);
+    return this.waitForBatch(options.projectId, submitted.batchId, poll);
   }
 
   /**
@@ -306,88 +320,167 @@ export class VideosResource {
     };
   }
 
-  /** Polls the generation-batches endpoint until the batch completes. */
-  async waitForBatch(batchId: string, poll: WaitOptions = {}): Promise<GenerateAndWaitResult> {
-    const { batch } = poll.stream
-      ? await this.waitForBatchStream(batchId, poll)
-      : await waitFor<BatchGetResponse>({
-          description: batchId,
-          ...poll,
-          fetch: () => this.batches.get(batchId),
-          isDone: (state) =>
-            state.batch !== null && (state.batch.isComplete || state.batch.hasError),
-        });
+  /**
+   * Waits for a batch to finish and resolves its completed videos.
+   *
+   * Completion is event-driven: the SSE `/generation-batches/:id/stream`
+   * endpoint pushes item state and a terminal `isComplete: true` event (the
+   * web app listens the same way), so no polling is involved. Pass
+   * `poll.stream: false` to opt back into list-endpoint polling instead.
+   *
+   * By default only the first completed video is returned. Pass
+   * `poll.all: true` to receive every variation (a generation defaults to 4).
+   */
+  async waitForBatch(
+    projectId: string,
+    batchId: string,
+    poll: WaitForBatchOptions = {},
+  ): Promise<GenerateAndWaitResult> {
+    const { batch } =
+      poll.stream === false
+        ? { batch: await this.findCompletedBatch(projectId, batchId, poll) }
+        : await this.waitForBatchStream(projectId, batchId, poll);
 
     if (batch === null) {
       throw new Error(`Batch ${batchId} not found`);
     }
-    const videos = batch.content.filter(
+    const completed = batch.content.filter(
       (item) => item.type === "videos" && item.videoUrl !== null && item.error === null,
     );
+    const videos = poll.all === true ? completed : completed.slice(0, 1);
 
     if (batch.hasError && videos.length === 0) {
       throw new Error(`Batch ${batchId} failed: ${batch.error ?? "unknown error"}`);
     }
 
     // In stream mode the finalize PUT was already issued from the stream data.
-    if (!poll.stream) {
+    if (poll.stream === false) {
       await this.batches.update(toUpdatePayload(batch));
     }
     return { batch, videos };
   }
 
-  /** Stream variant of `waitForBatch`: consumes SSE until the stream closes. */
+  /**
+   * Waits until the given batch shows as complete (or errored) in the
+   * project's batch list.
+   *
+   * The single-batch `GET /api/generation-batches/:batchId` endpoint has been
+   * removed server-side (it returns 500), so tracking goes through
+   * `GET /api/projects/:projectId/batches` — the same endpoint the web app
+   * refreshes against.
+   */
+  private async findCompletedBatch(
+    projectId: string,
+    batchId: string,
+    poll: WaitOptions,
+  ): Promise<GenerationBatch | null> {
+    const { batches } = await waitFor<BatchListResponse>({
+      description: batchId,
+      ...poll,
+      fetch: async () => {
+        try {
+          return await this.batches.list(projectId);
+        } catch (err) {
+          // The list endpoint intermittently 500s under load; the web app
+          // keeps polling through it, so treat it as "not done yet" instead
+          // of aborting the whole wait.
+          if (err instanceof VibesHttpError && err.status >= 500) {
+            return { batches: [], nextOffset: null };
+          }
+          throw err;
+        }
+      },
+      isDone: (state) => {
+        const batch = state.batches.find((b) => b.id === batchId);
+        return batch !== undefined && (batch.isComplete || batch.hasError);
+      },
+    });
+    return batches.find((b) => b.id === batchId) ?? null;
+  }
+
+  /**
+   * Event-driven wait: consumes the SSE `/generation-batches/:id/stream`
+   * endpoint until it emits `isComplete: true`.
+   *
+   * The server can drop the connection mid-flight (the web app's captures
+   * show it reconnecting), so a dropped/closed stream is reconnected with a
+   * short backoff until the batch reports complete or the deadline elapses.
+   * If the stream endpoint itself is unavailable (non-2xx), progress is
+   * tracked through the project's batch list instead. After the finalize PUT
+   * the finalized batch record is resolved (typically a single fetch).
+   */
   private async waitForBatchStream(
+    projectId: string,
     batchId: string,
     poll: WaitOptions,
   ): Promise<{ batch: GenerationBatch | null }> {
     const timeoutMs = poll.timeoutMs ?? POLL_DEFAULTS.timeoutMs;
     const deadline = Date.now() + timeoutMs;
     const events: BatchStreamEvent[] = [];
+    const controller = new AbortController();
 
-    try {
-      await this.batches.stream(batchId, {
-        ...(poll.signal !== undefined ? { signal: poll.signal } : {}),
-        onEvent: (event) => {
-          events.push(event);
-          poll.onPoll?.(event);
-          if (Date.now() >= deadline) {
-            throw new VibesPollTimeoutError(
-              timeoutMs,
-              events[events.length - 1],
-              `stream ${batchId}`,
-            );
-          }
-        },
-      });
-    } catch (err) {
-      if (err instanceof VibesPollTimeoutError) throw err;
-      // An aborted read surfaces as a DOMException; surface the underlying error.
-      if (poll.signal?.aborted) {
-        throw poll.signal.reason instanceof Error
-          ? poll.signal.reason
-          : new DOMException("Stream aborted", "AbortError");
+    const collect = (event: BatchStreamEvent): void => {
+      events.push(event);
+      poll.onPoll?.(event);
+      if (Date.now() >= deadline) {
+        throw new VibesPollTimeoutError(timeoutMs, event, `stream ${batchId}`);
       }
-      throw err;
+      // Terminal event: close the current stream read.
+      if (event.isComplete) controller.abort();
+    };
+
+    const signal = poll.signal
+      ? AbortSignal.any([poll.signal, controller.signal])
+      : controller.signal;
+
+    let completed = false;
+    while (Date.now() < deadline && !completed) {
+      try {
+        await this.batches.stream(batchId, { signal, onEvent: collect });
+        completed = events.some((event) => event.isComplete);
+      } catch (err) {
+        if (err instanceof VibesPollTimeoutError) throw err;
+        // An aborted read surfaces as a DOMException; surface the underlying error.
+        if (poll.signal?.aborted) {
+          throw poll.signal.reason instanceof Error
+            ? poll.signal.reason
+            : new DOMException("Stream aborted", "AbortError");
+        }
+        if (err instanceof DOMException && err.name === "AbortError") {
+          completed = events.some((event) => event.isComplete);
+        } else if (err instanceof VibesHttpError) {
+          // Stream endpoint unavailable — fall back to list-endpoint tracking.
+          return { batch: await this.findCompletedBatch(projectId, batchId, poll) };
+        }
+        // Anything else is a dropped connection: back off and reconnect.
+      }
+      if (!completed && Date.now() < deadline) {
+        await sleep(2_000);
+      }
     }
 
     const lastEvent = events[events.length - 1];
-    if (lastEvent === undefined || !lastEvent.isComplete) {
+    if (!completed || lastEvent === undefined || !lastEvent.isComplete) {
       throw new VibesPollTimeoutError(timeoutMs, lastEvent, `stream ${batchId}`);
     }
 
     // The batch record is still in its in-flight shape (`config: null`,
-    // content loading) until we finalize it; the stream's last event carries
-    // the real output, so the PUT is built from that rather than the GET.
-    await this.batches.update(streamFinalizePayload(batchId, lastEvent.items));
+    // content loading) until we finalize it; the stream's events carry the
+    // real output. Accumulate items across *all* events (not just the last
+    // one): with multiple variations the terminal event may only include the
+    // slots that changed, so finalizing from it alone would drop the rest.
+    const streamItems = events.flatMap((event) => event.items);
+    await this.batches.update(streamFinalizePayload(batchId, streamItems));
 
-    // Fetch the completed batch record now that it has been finalized.
-    return waitFor<BatchGetResponse>({
-      description: batchId,
+    // Resolve the finalized batch record. The batch is already complete
+    // server-side once the stream said so and the PUT landed, so this is a
+    // short, bounded fetch — not a completion poll.
+    const batch = await this.findCompletedBatch(projectId, batchId, {
       ...poll,
-      fetch: () => this.batches.get(batchId),
-      isDone: (state) => state.batch !== null && (state.batch.isComplete || state.batch.hasError),
+      intervalMs: poll.intervalMs ?? 1_000,
+      timeoutMs: Math.min(poll.timeoutMs ?? POLL_DEFAULTS.timeoutMs, 20_000),
     });
+    return { batch };
   }
 
   /**
@@ -399,21 +492,16 @@ export class VideosResource {
     batchId: string,
     poll: WaitOptions = {},
   ): Promise<ExtendAndWaitResult> {
-    const { batch } = poll.stream
-      ? await this.waitForBatchStream(batchId, poll)
-      : await waitFor<BatchGetResponse>({
-          description: batchId,
-          ...poll,
-          fetch: () => this.batches.get(batchId),
-          isDone: (state) =>
-            state.batch !== null && (state.batch.isComplete || state.batch.hasError),
-        });
+    const { batch } =
+      poll.stream === false
+        ? { batch: await this.findCompletedBatch(projectId, batchId, poll) }
+        : await this.waitForBatchStream(projectId, batchId, poll);
 
     if (batch === null) {
       throw new Error(`Batch ${batchId} not found`);
     }
     // In stream mode the finalize PUT was already issued from the stream data.
-    if (!poll.stream) {
+    if (poll.stream === false) {
       await this.batches.update(toUpdatePayload(batch));
     }
 
@@ -628,7 +716,7 @@ function toUpdatePayload(batch: GenerationBatch): BatchUpdatePayload {
       videoHandle: item.videoHandle,
       imageUrl: item.imageUrl,
       imageHandle: item.imageHandle,
-      data: stringifyData(item.data),
+      data: normalizeData(item.data),
       error: item.error,
     })),
     isComplete: batch.isComplete,
@@ -666,7 +754,7 @@ function streamFinalizePayload(batchId: string, items: BatchStreamItem[]): Batch
       videoHandle: item.videoHandle,
       imageUrl: item.imageUrl,
       imageHandle: item.imageHandle,
-      data: stringifyData(item.data),
+      data: normalizeData(item.data),
       error: item.error,
     })),
     isComplete: true,
@@ -679,11 +767,23 @@ function stripEpochSuffix(id: string): string {
   return id.replace(/(-content-\d+)-(\d+)$/, "$1");
 }
 
-/** `data` travels as a JSON *string*, not an object, in the PUT body. */
-function stringifyData(data: unknown): string | null {
-  if (typeof data === "string") return data;
-  if (data === null || data === undefined) return null;
-  return JSON.stringify(data);
+/**
+ * `data` travels as an *object* in the PUT body (the platform now rejects
+ * stringified data). Server responses still sometimes serialize it as a JSON
+ * string, so parse those back into an object first.
+ */
+function normalizeData(data: unknown): string | Record<string, unknown> | null {
+  if (typeof data === "string") {
+    try {
+      const parsed = safeJsonParse(data);
+      return parsed === null || typeof parsed === "string"
+        ? parsed
+        : (parsed as Record<string, unknown>);
+    } catch {
+      return data;
+    }
+  }
+  return data === undefined ? null : (data as Record<string, unknown> | null);
 }
 
 /** Minimal asset-like view of a batch content item (fallback path). */

@@ -23,43 +23,48 @@ npm setups that restrict dependency install scripts. Requires Node >= 22.
 
 ## Authentication
 
-The API is authenticated with your browser session cookie. `browserSession()`
-resolves the session in order:
-
-1. `VIBES_SESSION_COOKIE` env var — for servers / headless deployments (paste a
-   fresh cookie when it expires; no client recreation needed)
-2. Helium — your local browser session, read straight from its cookie database
-   (read-only copy — the browser can stay open)
-3. The other browsers, auto-detected (chrome → chromium → brave → edge →
-   firefox → safari)
-
-So the same code works on the server (env cookie) and locally (browser):
+Auto-login — no manual cookie copy, no 401s that break mid-run.
+`autoSession()` reads the Meta account cookies from your local browser (the same
+browser you are logged into Meta with), replays the vibes.ai Meta OIDC flow
+in a headless Chromium (raw DevTools Protocol over `WebSocket`, zero deps),
+mints a fresh `meta_session`, caches it in `~/.vibes-session.json`, and
+re-logins automatically on a 401. The client stays exactly:
 
 ```ts
-import { VibesClient, browserSession } from "vibes-ai";
+import { VibesClient, autoSession } from "vibes-ai";
 
-const client = new VibesClient({ session: browserSession() });
+const client = new VibesClient({ session: autoSession() });
 ```
 
-The env cookie is re-checked on every call, and browser sessions are refreshed
-automatically as they rotate (throttled to every 5s). Browsers are auto-detected
-(helium → chrome → chromium → brave → edge → firefox → safari); override with
-`browserSession({ browser: "firefox" })`, or point at a specific profile with
-`browserSession({ profileDir: "~/.config/..." })`. Sync failures throw
-`VibesAuthError` with a hint to sign in again.
+How it works:
 
-To manage the cookie manually instead — copy the `cookie` header from DevTools
+1. `VIBES_SESSION_COOKIE` env var — for servers / headless deployments
+   (static cookie; takes precedence; leave unset to use auto-login)
+2. The session cache (`~/.vibes-session.json`) — validated against `/auth/me`
+   before reuse (override with `VIBES_SESSION_FILE`)
+3. Auto-login — reads the Meta account cookies (dbln, fs, …) from your local
+   browser (helium → chrome → chromium → brave → edge; override with
+   `VIBES_BROWSER` or `VIBES_PROFILE_DIR`), launches a throwaway headless Chromium,
+   walks the OIDC flow, harvests `meta_session` and writes it to disk
+
+Sign in to vibes.ai (Meta) in your browser once — that links your Meta account
+and enables the flow; after that auto-login keeps the session fresh forever.
+For servers, export a fresh cookie with `login()` one-liner. Any request that gets a
+401 triggers one re-login.
+
+To manage the cookie manually instead — copy the `session` prop from DevTools
 → Network → any request (containing `meta_session=...; cookie_ack=true`) and
 pass it as a static string or a function (sync or async) that reads a fresh
-session, rotating without recreating the client:
+session, rotating without recreating the client.
 
 ## Quick start
 
 ```ts
-import { VibesClient } from "vibes-ai";
+import { VibesClient, autoSession } from "vibes-ai";
 import { readFileSync } from "node:fs";
 
-const client = new VibesClient({ session: process.env.VIBES_SESSION_COOKIE });
+// session: autoSession() mints a fresh session (and caches it to disk).
+const client = new VibesClient({ session: autoSession() });
 
 // 1. Who am I + a project to work in.
 const { user } = await client.auth.me();
@@ -89,6 +94,18 @@ const { batch, videos } = await client.videos.generateAndWait(
 );
 
 console.log(videos[0].videoUrl); // -> https://scontent-...mp4
+```
+
+A generation produces 4 variations by default. Pass `all: true` on the wait
+options to receive every finished variation instead of just the first:
+
+```ts
+const { videos: allVideos } = await client.videos.generateAndWait(
+  { projectId: project.id, prompt: "a misty valley", startFrame, variations: 4 },
+  { all: true },
+);
+
+console.log(allVideos.map((video) => video.videoUrl)); // 4 URLs
 ```
 
 ### Prompt-only (no reference frame)
@@ -163,13 +180,16 @@ schemas are exported from `vibes-ai` for your own parsing.
 `waitFor(fetch, isDone, options)` polls with optional jitter and a hard
 deadline. `WaitOptions`: `intervalMs` (default 3000), `timeoutMs` (default
 15 min), `jitterMs`, `signal` (AbortSignal), `onPoll`, `stream` (SSE).
+`generateAndWait` / `waitForBatch` also accept `all` (return every variation,
+not just the first).
 
 ```ts
 await client.videos.generateAndWait(
-  { projectId, prompt, startFrame, variations: 1 },
+  { projectId, prompt, startFrame, variations: 4 },
   {
     stream: true, // SSE instead of polling
     timeoutMs: 15 * 60_000,
+    all: true, // -> result.videos has all 4
     onPoll: (state) => console.log(state), // stream events or poll states
   },
 );

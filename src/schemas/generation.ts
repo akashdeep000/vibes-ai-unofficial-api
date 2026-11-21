@@ -157,8 +157,25 @@ export const BatchUpdatePayloadSchema = z.object({
       videoHandle: z.unknown().nullable(),
       imageUrl: z.string().url().nullable(),
       imageHandle: z.unknown().nullable(),
-      /** Note: serialized as a JSON *string* in the PUT body. */
-      data: z.string().nullable(),
+      /**
+       * The gen metadata travels as an *object* in the PUT body. The
+       * platform now rejects stringified `data` (`Failed to update
+       * generation batch`); a trailing string case is kept only for
+       * payloads built from server responses that still serialize it.
+       */
+      data: z
+        .union([
+          z
+            .object({
+              videoGenEntId: MediaEntIdSchema.optional(),
+              requestId: z.string().optional(),
+              imageEntId: MediaEntIdSchema.optional(),
+            })
+            .passthrough(),
+          z.string(),
+          z.null(),
+        ])
+        .nullable(),
       error: z.string().nullable(),
     }),
   ),

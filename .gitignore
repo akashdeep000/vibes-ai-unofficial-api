@@ -10,3 +10,13 @@ coverage/
 .DS_Store
 .vscode/
 .idea/
+
+# local debug state
+.debug-state.json
+
+# minted session cache (autoSession)
+.vibes-session.json
+
+# local network captures (may contain session cookies, large)
+*.har
+requests/*.har

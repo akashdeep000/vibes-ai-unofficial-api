@@ -5,11 +5,23 @@
 export { VibesClient } from "./client.js";
 export type { VibesClientOptions } from "./client.js";
 
-export { browserSession, syncSessionFromBrowser } from "./auth/browser-session.js";
-export type { BrowserSessionConfig } from "./auth/browser-session.js";
+export { autoSession, login, DEFAULT_SESSION_FILE } from "./auth/auto-login.js";
+export type { AutoSession, AutoSessionOptions, LoginResult } from "./auth/auto-login.js";
+
+export {
+  browserSession,
+  syncSessionFromBrowser,
+  readCookiesFromBrowser,
+} from "./auth/browser-session.js";
+export type { BrowserSessionConfig, BrowserCookies } from "./auth/browser-session.js";
 
 export { HttpClient, parseFirstJsonObject } from "./http/http-client.js";
-export type { HttpClientOptions, RequestOptions, SessionProvider } from "./http/http-client.js";
+export type {
+  HttpClientOptions,
+  RefreshableSession,
+  RequestOptions,
+  SessionProvider,
+} from "./http/http-client.js";
 
 export { AuthResource } from "./resources/auth.js";
 export { ProjectsResource } from "./resources/projects.js";
@@ -30,6 +42,7 @@ export type {
   ExtendGenerateOptions,
   ExtendToDurationOptions,
   GenerateAndWaitResult,
+  WaitForBatchOptions,
   ExtendAndWaitResult,
 } from "./resources/videos.js";
 

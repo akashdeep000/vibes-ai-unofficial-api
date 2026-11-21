@@ -44,6 +44,7 @@ __export(index_exports, {
   ContentItemIdSchema: () => ContentItemIdSchema,
   ContentItemsResource: () => ContentItemsResource,
   DEFAULT_RETRY_OPTIONS: () => DEFAULT_RETRY_OPTIONS,
+  DEFAULT_SESSION_FILE: () => DEFAULT_SESSION_FILE,
   DEFAULT_VARIATION_COUNT: () => DEFAULT_VARIATION_COUNT,
   DimensionsSchema: () => DimensionsSchema,
   DirectPromptImageHandleSchema: () => DirectPromptImageHandleSchema,
@@ -98,13 +99,16 @@ __export(index_exports, {
   VibesPollTimeoutError: () => VibesPollTimeoutError,
   VibesValidationError: () => VibesValidationError,
   VideosResource: () => VideosResource,
+  autoSession: () => autoSession,
   batchId: () => batchId,
   browserSession: () => browserSession,
   contentItemId: () => contentItemId,
   dimensionsToAspectRatio: () => dimensionsToAspectRatio,
   extendBatchId: () => extendBatchId,
+  login: () => login,
   mgRequestId: () => mgRequestId,
   parseFirstJsonObject: () => parseFirstJsonObject,
+  readCookiesFromBrowser: () => readCookiesFromBrowser,
   resolveAspectRatio: () => resolveAspectRatio,
   syncSessionFromBrowser: () => syncSessionFromBrowser,
   uuidv7: () => uuidv7,
@@ -276,6 +280,9 @@ async function withRetry(fn, options = DEFAULT_RETRY_OPTIONS) {
 }
 
 // src/http/http-client.ts
+function isRefreshable(session) {
+  return typeof session === "function" && typeof session.refresh === "function";
+}
 var isSuccessfulStatus = (status) => status >= 200 && status < 300;
 var HttpClient = class {
   #baseUrl;
@@ -322,6 +329,18 @@ var HttpClient = class {
     return this.#session;
   }
   async request(options) {
+    try {
+      return await this.execute(options);
+    } catch (error) {
+      if (!this.canRefresh(error)) throw error;
+      await this.#session.refresh();
+      return this.execute(options);
+    }
+  }
+  canRefresh(error) {
+    return error instanceof VibesHttpError && error.status === 401 && isRefreshable(this.#session);
+  }
+  async execute(options) {
     const url = this.resolveUrl(options.path, options.query);
     const headers = {
       accept: "application/json",
@@ -356,6 +375,15 @@ var HttpClient = class {
    * Resolves once the response body completes (or the signal aborts).
    */
   async stream(options) {
+    try {
+      await this.openStream(options);
+    } catch (error) {
+      if (!this.canRefresh(error)) throw error;
+      await this.#session.refresh();
+      await this.openStream(options);
+    }
+  }
+  async openStream(options) {
     const url = this.resolveUrl(options.path);
     const headers = {
       accept: "text/event-stream",
@@ -515,7 +543,7 @@ var AssetSchema = import_zod3.z.object({
   mediaEntId: MediaEntIdSchema.nullable(),
   data: import_zod3.z.object({
     videoGenEntId: MediaEntIdSchema.optional(),
-    requestId: import_zod3.z.string(),
+    requestId: import_zod3.z.string().optional(),
     imageEntId: MediaEntIdSchema.optional()
   }).nullable().optional()
 });
@@ -1312,8 +1340,21 @@ var BatchUpdatePayloadSchema = import_zod9.z.object({
       videoHandle: import_zod9.z.unknown().nullable(),
       imageUrl: import_zod9.z.string().url().nullable(),
       imageHandle: import_zod9.z.unknown().nullable(),
-      /** Note: serialized as a JSON *string* in the PUT body. */
-      data: import_zod9.z.string().nullable(),
+      /**
+       * The gen metadata travels as an *object* in the PUT body. The
+       * platform now rejects stringified `data` (`Failed to update
+       * generation batch`); a trailing string case is kept only for
+       * payloads built from server responses that still serialize it.
+       */
+      data: import_zod9.z.union([
+        import_zod9.z.object({
+          videoGenEntId: MediaEntIdSchema.optional(),
+          requestId: import_zod9.z.string().optional(),
+          imageEntId: MediaEntIdSchema.optional()
+        }).passthrough(),
+        import_zod9.z.string(),
+        import_zod9.z.null()
+      ]).nullable(),
       error: import_zod9.z.string().nullable()
     })
   ),
@@ -1419,7 +1460,7 @@ var VideosResource = class {
    */
   async generateAndWait(options, poll = {}) {
     const submitted = await this.generateT2V(options);
-    return this.waitForBatch(submitted.batchId, poll);
+    return this.waitForBatch(options.projectId, submitted.batchId, poll);
   }
   /**
    * Extends a video and polls until the new asset is ready.
@@ -1482,82 +1523,132 @@ var VideosResource = class {
       extensions
     };
   }
-  /** Polls the generation-batches endpoint until the batch completes. */
-  async waitForBatch(batchId2, poll = {}) {
-    const { batch } = poll.stream ? await this.waitForBatchStream(batchId2, poll) : await waitFor({
-      description: batchId2,
-      ...poll,
-      fetch: () => this.batches.get(batchId2),
-      isDone: (state) => state.batch !== null && (state.batch.isComplete || state.batch.hasError)
-    });
+  /**
+   * Waits for a batch to finish and resolves its completed videos.
+   *
+   * Completion is event-driven: the SSE `/generation-batches/:id/stream`
+   * endpoint pushes item state and a terminal `isComplete: true` event (the
+   * web app listens the same way), so no polling is involved. Pass
+   * `poll.stream: false` to opt back into list-endpoint polling instead.
+   *
+   * By default only the first completed video is returned. Pass
+   * `poll.all: true` to receive every variation (a generation defaults to 4).
+   */
+  async waitForBatch(projectId, batchId2, poll = {}) {
+    const { batch } = poll.stream === false ? { batch: await this.findCompletedBatch(projectId, batchId2, poll) } : await this.waitForBatchStream(projectId, batchId2, poll);
     if (batch === null) {
       throw new Error(`Batch ${batchId2} not found`);
     }
-    const videos = batch.content.filter(
+    const completed = batch.content.filter(
       (item) => item.type === "videos" && item.videoUrl !== null && item.error === null
     );
+    const videos = poll.all === true ? completed : completed.slice(0, 1);
     if (batch.hasError && videos.length === 0) {
       throw new Error(`Batch ${batchId2} failed: ${batch.error ?? "unknown error"}`);
     }
-    if (!poll.stream) {
+    if (poll.stream === false) {
       await this.batches.update(toUpdatePayload(batch));
     }
     return { batch, videos };
   }
-  /** Stream variant of `waitForBatch`: consumes SSE until the stream closes. */
-  async waitForBatchStream(batchId2, poll) {
+  /**
+   * Waits until the given batch shows as complete (or errored) in the
+   * project's batch list.
+   *
+   * The single-batch `GET /api/generation-batches/:batchId` endpoint has been
+   * removed server-side (it returns 500), so tracking goes through
+   * `GET /api/projects/:projectId/batches` — the same endpoint the web app
+   * refreshes against.
+   */
+  async findCompletedBatch(projectId, batchId2, poll) {
+    const { batches } = await waitFor({
+      description: batchId2,
+      ...poll,
+      fetch: async () => {
+        try {
+          return await this.batches.list(projectId);
+        } catch (err) {
+          if (err instanceof VibesHttpError && err.status >= 500) {
+            return { batches: [], nextOffset: null };
+          }
+          throw err;
+        }
+      },
+      isDone: (state) => {
+        const batch = state.batches.find((b) => b.id === batchId2);
+        return batch !== void 0 && (batch.isComplete || batch.hasError);
+      }
+    });
+    return batches.find((b) => b.id === batchId2) ?? null;
+  }
+  /**
+   * Event-driven wait: consumes the SSE `/generation-batches/:id/stream`
+   * endpoint until it emits `isComplete: true`.
+   *
+   * The server can drop the connection mid-flight (the web app's captures
+   * show it reconnecting), so a dropped/closed stream is reconnected with a
+   * short backoff until the batch reports complete or the deadline elapses.
+   * If the stream endpoint itself is unavailable (non-2xx), progress is
+   * tracked through the project's batch list instead. After the finalize PUT
+   * the finalized batch record is resolved (typically a single fetch).
+   */
+  async waitForBatchStream(projectId, batchId2, poll) {
     const timeoutMs = poll.timeoutMs ?? POLL_DEFAULTS.timeoutMs;
     const deadline = Date.now() + timeoutMs;
     const events = [];
-    try {
-      await this.batches.stream(batchId2, {
-        ...poll.signal !== void 0 ? { signal: poll.signal } : {},
-        onEvent: (event) => {
-          events.push(event);
-          poll.onPoll?.(event);
-          if (Date.now() >= deadline) {
-            throw new VibesPollTimeoutError(
-              timeoutMs,
-              events[events.length - 1],
-              `stream ${batchId2}`
-            );
-          }
-        }
-      });
-    } catch (err) {
-      if (err instanceof VibesPollTimeoutError) throw err;
-      if (poll.signal?.aborted) {
-        throw poll.signal.reason instanceof Error ? poll.signal.reason : new DOMException("Stream aborted", "AbortError");
+    const controller = new AbortController();
+    const collect = (event) => {
+      events.push(event);
+      poll.onPoll?.(event);
+      if (Date.now() >= deadline) {
+        throw new VibesPollTimeoutError(timeoutMs, event, `stream ${batchId2}`);
       }
-      throw err;
+      if (event.isComplete) controller.abort();
+    };
+    const signal = poll.signal ? AbortSignal.any([poll.signal, controller.signal]) : controller.signal;
+    let completed = false;
+    while (Date.now() < deadline && !completed) {
+      try {
+        await this.batches.stream(batchId2, { signal, onEvent: collect });
+        completed = events.some((event) => event.isComplete);
+      } catch (err) {
+        if (err instanceof VibesPollTimeoutError) throw err;
+        if (poll.signal?.aborted) {
+          throw poll.signal.reason instanceof Error ? poll.signal.reason : new DOMException("Stream aborted", "AbortError");
+        }
+        if (err instanceof DOMException && err.name === "AbortError") {
+          completed = events.some((event) => event.isComplete);
+        } else if (err instanceof VibesHttpError) {
+          return { batch: await this.findCompletedBatch(projectId, batchId2, poll) };
+        }
+      }
+      if (!completed && Date.now() < deadline) {
+        await sleep(2e3);
+      }
     }
     const lastEvent = events[events.length - 1];
-    if (lastEvent === void 0 || !lastEvent.isComplete) {
+    if (!completed || lastEvent === void 0 || !lastEvent.isComplete) {
       throw new VibesPollTimeoutError(timeoutMs, lastEvent, `stream ${batchId2}`);
     }
-    await this.batches.update(streamFinalizePayload(batchId2, lastEvent.items));
-    return waitFor({
-      description: batchId2,
+    const streamItems = events.flatMap((event) => event.items);
+    await this.batches.update(streamFinalizePayload(batchId2, streamItems));
+    const batch = await this.findCompletedBatch(projectId, batchId2, {
       ...poll,
-      fetch: () => this.batches.get(batchId2),
-      isDone: (state) => state.batch !== null && (state.batch.isComplete || state.batch.hasError)
+      intervalMs: poll.intervalMs ?? 1e3,
+      timeoutMs: Math.min(poll.timeoutMs ?? POLL_DEFAULTS.timeoutMs, 2e4)
     });
+    return { batch };
   }
   /**
    * Waits for the batch to finish, finalizes it (PUT), then resolves the
    * resulting video asset from the project's asset list.
    */
   async waitForExtendAsset(projectId, batchId2, poll = {}) {
-    const { batch } = poll.stream ? await this.waitForBatchStream(batchId2, poll) : await waitFor({
-      description: batchId2,
-      ...poll,
-      fetch: () => this.batches.get(batchId2),
-      isDone: (state) => state.batch !== null && (state.batch.isComplete || state.batch.hasError)
-    });
+    const { batch } = poll.stream === false ? { batch: await this.findCompletedBatch(projectId, batchId2, poll) } : await this.waitForBatchStream(projectId, batchId2, poll);
     if (batch === null) {
       throw new Error(`Batch ${batchId2} not found`);
     }
-    if (!poll.stream) {
+    if (poll.stream === false) {
       await this.batches.update(toUpdatePayload(batch));
     }
     const assets = await waitFor({
@@ -1726,7 +1817,7 @@ function toUpdatePayload(batch) {
       videoHandle: item.videoHandle,
       imageUrl: item.imageUrl,
       imageHandle: item.imageHandle,
-      data: stringifyData(item.data),
+      data: normalizeData(item.data),
       error: item.error
     })),
     isComplete: batch.isComplete,
@@ -1752,7 +1843,7 @@ function streamFinalizePayload(batchId2, items) {
       videoHandle: item.videoHandle,
       imageUrl: item.imageUrl,
       imageHandle: item.imageHandle,
-      data: stringifyData(item.data),
+      data: normalizeData(item.data),
       error: item.error
     })),
     isComplete: true,
@@ -1762,10 +1853,16 @@ function streamFinalizePayload(batchId2, items) {
 function stripEpochSuffix(id) {
   return id.replace(/(-content-\d+)-(\d+)$/, "$1");
 }
-function stringifyData(data) {
-  if (typeof data === "string") return data;
-  if (data === null || data === void 0) return null;
-  return JSON.stringify(data);
+function normalizeData(data) {
+  if (typeof data === "string") {
+    try {
+      const parsed = safeJsonParse(data);
+      return parsed === null || typeof parsed === "string" ? parsed : parsed;
+    } catch {
+      return data;
+    }
+  }
+  return data === void 0 ? null : data;
 }
 function batchContentToAsset(batch) {
   const item = batch.content.find((c) => c.type === "videos" && c.videoUrl);
@@ -1805,18 +1902,237 @@ var VibesClient = class {
   }
 };
 
-// src/auth/browser-session.ts
+// src/auth/auto-login.ts
+var import_node_fs3 = require("fs");
+var import_node_path3 = require("path");
+
+// src/auth/browser-cdp.ts
 var import_node_child_process = require("child_process");
 var import_node_fs = require("fs");
 var import_node_os = require("os");
 var import_node_path = require("path");
+var DEFAULT_TIMEOUT_MS = 9e4;
+var CHROMIUM_BINARIES = [
+  "chromium",
+  "google-chrome",
+  "google-chrome-stable",
+  "brave-browser",
+  "brave",
+  "helium-browser",
+  "helium",
+  "microsoft-edge"
+];
+async function loginViaBrowser(opts) {
+  const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const binary = opts.binary ?? process.env.VIBES_BROWSER_BINARY ?? findChromiumBinary();
+  if (!binary) {
+    throw new VibesAuthError(
+      "Auto-login needs a Chromium-family browser binary. Install one, set VIBES_BROWSER_BINARY, or set VIBES_SESSION_COOKIE directly."
+    );
+  }
+  const deadline = Date.now() + timeoutMs;
+  const profile = (0, import_node_fs.mkdtempSync)((0, import_node_path.join)((0, import_node_os.tmpdir)(), "vibes-login-"));
+  let proc;
+  let cdp;
+  try {
+    proc = (opts.spawnProcess ?? import_node_child_process.spawn)(
+      binary,
+      [
+        "--headless=new",
+        `--user-data-dir=${profile}`,
+        "--remote-debugging-port=0",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-gpu",
+        "--mute-audio",
+        "about:blank"
+      ],
+      { stdio: ["ignore", "ignore", "pipe"] }
+    );
+    const wsUrl = await devToolsUrl(proc, timeoutMs);
+    cdp = await Cdp.connect(wsUrl, opts.webSocketImpl ?? WebSocket);
+    const { targetId } = await cdp.send("Target.createTarget", {
+      url: "about:blank"
+    });
+    const { sessionId } = await cdp.send("Target.attachToTarget", {
+      targetId,
+      flatten: true
+    });
+    const page = (method, params) => cdp.send(method, params, sessionId);
+    await page("Network.enable");
+    if (opts.cookies.length > 0) await page("Network.setCookies", { cookies: opts.cookies });
+    await page("Page.enable");
+    const landed = cdp.waitEvent(
+      "Page.frameNavigated",
+      sessionId,
+      (p) => p.frame?.parentId === void 0 && (p.frame?.url ?? "").startsWith(opts.landingUrlPrefix)
+    );
+    void page("Page.navigate", { url: opts.startUrl }).catch(() => {
+    });
+    if (!await Promise.race([landed.then(() => true), timeoutAt(deadline)])) {
+      throw new VibesAuthError(
+        "Meta asked for interaction instead of bouncing back to vibes.ai. Sign in to vibes.ai in your browser once to (re)link the Meta account."
+      );
+    }
+    for (; ; ) {
+      const { cookies } = await page(
+        "Network.getCookies",
+        { urls: [opts.cookiesForUrl] }
+      );
+      const candidates = cookies.filter((c) => c.name === "meta_session" && c.value.length > 0).map((c) => `${c.name}=${c.value}`).reverse();
+      for (const candidate of candidates) {
+        if (!opts.validateCookie || await opts.validateCookie(candidate)) return candidate;
+      }
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) {
+        throw new VibesAuthError("vibes.ai did not mint a working meta_session (API drift?).");
+      }
+      await wait(Math.min(400, remaining));
+    }
+  } finally {
+    cdp?.close();
+    if (proc && proc.exitCode === null && !proc.killed) proc.kill("SIGKILL");
+    (0, import_node_fs.rmSync)(profile, { recursive: true, force: true });
+  }
+}
+function devToolsUrl(proc, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    let buffer = "";
+    const timer = setTimeout(
+      () => reject(new VibesAuthError("Browser did not expose DevTools in time.")),
+      timeoutMs
+    );
+    proc.stderr.on("data", (chunk) => {
+      buffer += chunk.toString("utf8");
+      const match = buffer.match(/DevTools listening on (ws:\/\/\S+)/);
+      if (match) {
+        clearTimeout(timer);
+        resolve(match[1]);
+      }
+    });
+    proc.on("exit", (code) => {
+      clearTimeout(timer);
+      reject(new VibesAuthError(`Browser exited early (code ${code}) before login completed.`));
+    });
+    proc.on("error", (err) => {
+      clearTimeout(timer);
+      reject(new VibesAuthError(`Failed to launch browser: ${err.message}`));
+    });
+  });
+}
+function timeoutAt(deadline) {
+  return new Promise((resolve) => {
+    const ms = deadline - Date.now();
+    if (ms <= 0) return resolve(false);
+    setTimeout(() => resolve(true), ms);
+  });
+}
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+function findChromiumBinary() {
+  for (const name of CHROMIUM_BINARIES) {
+    const probe = (0, import_node_child_process.spawnSync)("which", [name], { encoding: "utf8" });
+    if (probe.status === 0 && probe.stdout.trim()) return probe.stdout.trim().split("\n")[0];
+  }
+  return void 0;
+}
+var Cdp = class _Cdp {
+  #ws;
+  #pending = /* @__PURE__ */ new Map();
+  #waiters = /* @__PURE__ */ new Set();
+  #nextId = 1;
+  constructor(ws) {
+    this.#ws = ws;
+    ws.addEventListener("message", (event) => this.#onMessage(event));
+    const drop = () => this.#fatal(new VibesAuthError("CDP socket closed"));
+    ws.addEventListener("error", drop);
+    ws.addEventListener("close", drop);
+  }
+  static connect(url, ctor) {
+    return new Promise((resolve, reject) => {
+      const ws = new ctor(url);
+      const cdp = new _Cdp(ws);
+      ws.addEventListener("open", () => resolve(cdp));
+      ws.addEventListener(
+        "error",
+        () => reject(new VibesAuthError(`Cannot reach browser CDP at ${url}`))
+      );
+    });
+  }
+  send(method, params, sessionId) {
+    const id = this.#nextId++;
+    const message = {
+      id,
+      method,
+      ...params ? { params } : {},
+      ...sessionId ? { sessionId } : {}
+    };
+    return new Promise((resolve, reject) => {
+      this.#pending.set(id, {
+        resolve: (v) => resolve(v),
+        reject
+      });
+      this.#ws.send(JSON.stringify(message));
+    });
+  }
+  waitEvent(method, sessionId, match) {
+    return new Promise((resolve, reject) => {
+      const waiter = { method, sessionId, match, resolve, reject };
+      this.#waiters.add(waiter);
+    });
+  }
+  close() {
+    this.#fatal(new VibesAuthError("CDP client closed"));
+    try {
+      this.#ws.close();
+    } catch {
+    }
+  }
+  #onMessage(event) {
+    const data = JSON.parse(String(event.data));
+    if (data.id !== void 0) {
+      const entry = this.#pending.get(data.id);
+      if (!entry) return;
+      this.#pending.delete(data.id);
+      if (data.error) {
+        entry.reject(new VibesAuthError(`CDP ${data.error.message ?? "error"}`));
+      } else {
+        entry.resolve(data.result);
+      }
+      return;
+    }
+    if (data.method) {
+      for (const waiter of this.#waiters) {
+        const w = waiter;
+        if (w.method === data.method && w.sessionId === data.sessionId && w.match(data.params)) {
+          this.#waiters.delete(waiter);
+          w.resolve(data.params);
+        }
+      }
+    }
+    return;
+  }
+  #fatal(error) {
+    for (const entry of this.#pending.values()) entry.reject(error);
+    this.#pending.clear();
+    for (const waiter of this.#waiters) waiter.reject(error);
+    this.#waiters.clear();
+  }
+};
+
+// src/auth/browser-session.ts
+var import_node_child_process2 = require("child_process");
+var import_node_fs2 = require("fs");
+var import_node_os2 = require("os");
+var import_node_path2 = require("path");
 var import_sweet_cookie = require("@steipete/sweet-cookie");
 var SESSION_URL = "https://vibes.ai/";
 var SESSION_NAMES = ["meta_session", "cookie_ack"];
 var DEFAULT_THROTTLE_MS = 5e3;
-var HELIUM_DB = (0, import_node_path.join)((0, import_node_os.homedir)(), ".config", "net.imput.helium", "Default", "Cookies");
-var CHROMIUM_DB = (0, import_node_path.join)((0, import_node_os.homedir)(), ".config", "chromium", "Default", "Cookies");
-var BRAVE_DB = (0, import_node_path.join)((0, import_node_os.homedir)(), ".config", "BraveSoftware", "Brave-Browser", "Default", "Cookies");
+var HELIUM_DB = (0, import_node_path2.join)((0, import_node_os2.homedir)(), ".config", "net.imput.helium", "Default", "Cookies");
+var CHROMIUM_DB = (0, import_node_path2.join)((0, import_node_os2.homedir)(), ".config", "chromium", "Default", "Cookies");
+var BRAVE_DB = (0, import_node_path2.join)((0, import_node_os2.homedir)(), ".config", "BraveSoftware", "Brave-Browser", "Default", "Cookies");
 function autoCandidates() {
   return [
     // helium: Chromium fork, read through the chrome backend
@@ -1837,6 +2153,9 @@ function forkDbPath(kind) {
   return void 0;
 }
 async function syncSessionFromBrowser(cfg = {}) {
+  return (await readCookiesFromBrowser(cfg)).header;
+}
+async function readCookiesFromBrowser(cfg = {}) {
   const kind = cfg.browser ?? process.env.VIBES_BROWSER;
   const profileDir = cfg.profileDir ?? process.env.VIBES_PROFILE_DIR;
   const readCookies = cfg.readCookies ?? defaultReadCookies;
@@ -1844,14 +2163,14 @@ async function syncSessionFromBrowser(cfg = {}) {
   const sessionName = names[0] ?? SESSION_NAMES[0];
   let candidates;
   if (profileDir) {
-    const dbPath = (0, import_node_path.join)(profileDir, "Default", "Cookies");
-    if (!(0, import_node_fs.existsSync)(dbPath)) {
+    const dbPath = (0, import_node_path2.join)(profileDir, "Default", "Cookies");
+    if (!(0, import_node_fs2.existsSync)(dbPath)) {
       throw new VibesAuthError(`No cookie database at ${dbPath}.`);
     }
     candidates = [{ name: "profile", browser: "chrome", dbPath }];
   } else if (kind) {
     const dbPath = forkDbPath(kind);
-    if (dbPath && !(0, import_node_fs.existsSync)(dbPath)) {
+    if (dbPath && !(0, import_node_fs2.existsSync)(dbPath)) {
       throw new VibesAuthError(`No cookie database at ${dbPath}.`);
     }
     candidates = [
@@ -1871,15 +2190,14 @@ async function syncSessionFromBrowser(cfg = {}) {
     if (!profileDir && !kind) parts.push("(auto-detect)");
     console.warn(`   [browser] ${parts.join(", ")}`);
   }
-  setKeyringPassword();
   let warnings = [];
   for (const c of candidates) {
-    if (c.dbPath && !(0, import_node_fs.existsSync)(c.dbPath)) {
+    if (c.dbPath && !(0, import_node_fs2.existsSync)(c.dbPath)) {
       warnings.push(`${c.name}: cookie database not found`);
       if (cfg.verbose) console.warn(`   [browser] ${c.name}: cookie database not found`);
       continue;
     }
-    const res = await readCookies({
+    const res = await readWithKeyCandidates(readCookies, {
       url: cfg.url ?? SESSION_URL,
       names,
       browsers: [c.browser],
@@ -1899,7 +2217,11 @@ async function syncSessionFromBrowser(cfg = {}) {
         ...picked.filter((c2) => c2.name === sessionName),
         ...picked.filter((c2) => c2.name !== sessionName)
       ];
-      return ordered.map((c2) => `${c2.name}=${c2.value}`).join("; ");
+      return {
+        header: ordered.map((c2) => `${c2.name}=${c2.value}`).join("; "),
+        cookies: ordered,
+        source: { name: c.name, ...c.dbPath ? { dbPath: c.dbPath } : {} }
+      };
     }
   }
   const why = warnings[0] ? ` (${warnings[0]})` : "";
@@ -1927,20 +2249,149 @@ var defaultReadCookies = (opts) => (0, import_sweet_cookie.getCookies)({
   ...opts.chromeProfile ? { chromeProfile: opts.chromeProfile } : {},
   timeoutMs: opts.timeoutMs
 });
-var CHROMIUM_KEYRING_LABEL = "Chromium Safe Storage";
-var keyringLoaded = false;
-function setKeyringPassword() {
-  if (keyringLoaded) return;
-  keyringLoaded = true;
-  const r = (0, import_node_child_process.spawnSync)(
-    "secret-tool",
-    ["search", "--all", "xdg:schema", "chrome_libsecret_os_crypt_password_v2"],
-    { encoding: "utf8", timeout: 15e3 }
-  );
-  if (r.status !== 0 || !r.stdout) return;
-  const block = r.stdout.split(/\[\/\d+\]/).find((b) => b.includes(CHROMIUM_KEYRING_LABEL));
-  const secret = block?.match(/secret = (.+)/)?.[1];
-  if (secret) process.env.SWEET_COOKIE_CHROME_SAFE_STORAGE_PASSWORD = secret.trim();
+var keyringSecrets;
+async function readWithKeyCandidates(readCookies, args) {
+  let last = { cookies: [], warnings: [] };
+  for (const secret of keyringCandidates()) {
+    if (secret === void 0) delete process.env.SWEET_COOKIE_CHROME_SAFE_STORAGE_PASSWORD;
+    else process.env.SWEET_COOKIE_CHROME_SAFE_STORAGE_PASSWORD = secret;
+    last = await readCookies(args);
+    if (last.cookies.some((c) => c.value.length > 0)) return last;
+  }
+  return last;
+}
+function keyringCandidates() {
+  if (keyringSecrets === void 0) {
+    const chrom = [];
+    const other = [];
+    const r = (0, import_node_child_process2.spawnSync)(
+      "secret-tool",
+      ["search", "--all", "xdg:schema", "chrome_libsecret_os_crypt_password_v2"],
+      { encoding: "utf8", timeout: 15e3 }
+    );
+    if (r.status === 0 && r.stdout) {
+      for (const block of r.stdout.split(/\[\/\d+\]/)) {
+        const label = block.match(/label = (.+)/)?.[1] ?? "";
+        const secret = block.match(/secret = (.+)/)?.[1]?.trim();
+        if (!secret || !/safe storage/i.test(label)) continue;
+        (/chrom(e|ium)/i.test(label) ? chrom : other).push(secret);
+      }
+    }
+    keyringSecrets = [void 0, ...chrom, ...other];
+  }
+  return keyringSecrets;
+}
+
+// src/auth/auto-login.ts
+var META_AUTH_URL = "https://auth.meta.com/";
+var META_AUTH_COOKIES = ["dbln", "fs", "datr", "ps_l", "ps_n", "locale"];
+var PROBE_TIMEOUT_MS = 3e4;
+var DEFAULT_SESSION_FILE = ".vibes-session.json";
+async function login(opts = {}) {
+  const fetchImpl = opts.fetchImpl ?? globalThis.fetch;
+  const baseUrl = (opts.baseUrl ?? API_BASE_URL).replace(/\/+$/, "");
+  const trace = (step) => opts.verbose && console.warn(`   [login] ${step}`);
+  trace("reading Meta account cookies");
+  const meta = await readCookiesFromBrowser({
+    url: META_AUTH_URL,
+    cookieNames: META_AUTH_COOKIES,
+    ...opts.browser ? { browser: opts.browser } : {},
+    ...opts.profileDir ? { profileDir: opts.profileDir } : {},
+    ...opts.readCookies ? { readCookies: opts.readCookies } : {}
+  }).catch((cause) => {
+    throw new VibesAuthError(
+      "Auto-login needs a signed-in Meta account in your browser. Sign in to vibes.ai (Continue with Meta) once \u2014 the session stays fresh afterwards.",
+      { cause }
+    );
+  });
+  trace("minting session in headless browser");
+  const cookies = meta.cookies.map((c) => ({
+    name: c.name,
+    value: c.value,
+    url: META_AUTH_URL
+  }));
+  const metaSession = await (opts.loginBrowser ?? loginViaBrowser)({
+    startUrl: `${baseUrl}/api/meta-oidc/start`,
+    landingUrlPrefix: `${baseUrl}/`,
+    cookiesForUrl: `${baseUrl}/`,
+    cookies,
+    ...opts.browserBinary ? { binary: opts.browserBinary } : {}
+  });
+  const cookie = `${metaSession}; cookie_ack=true`;
+  const user = await validate(cookie, fetchImpl, baseUrl);
+  trace(`signed in as ${user.username}`);
+  return { cookie, user };
+}
+function autoSession(opts = {}) {
+  const file = opts.sessionFile ?? process.env.VIBES_SESSION_FILE ?? DEFAULT_SESSION_FILE;
+  const fromEnv = () => opts.sessionFromEnv ?? process.env.VIBES_SESSION_COOKIE;
+  let cached;
+  const refresh = async () => {
+    if (fromEnv()) {
+      throw new VibesAuthError(
+        "VIBES_SESSION_COOKIE was rejected by vibes.ai. Replace it with a fresh cookie (or unset it to let the browser-based auto-login take over)."
+      );
+    }
+    const { cookie, user } = await login(opts);
+    (0, import_node_fs3.mkdirSync)((0, import_node_path3.dirname)(file), { recursive: true });
+    (0, import_node_fs3.writeFileSync)(
+      file,
+      JSON.stringify({ cookie, user, savedAt: (/* @__PURE__ */ new Date()).toISOString() }),
+      { mode: 384 }
+    );
+    if (opts.verbose) console.warn(`   [login] session cached at ${file}`);
+    cached = cookie;
+    return cookie;
+  };
+  const provider = async () => {
+    const env = fromEnv();
+    if (env) return env;
+    if (cached) return cached;
+    const disk = readSessionFile(file);
+    if (disk && await isValid(disk, opts)) {
+      if (opts.verbose) console.warn(`   [login] reusing cached session from ${file}`);
+      return cached = disk;
+    }
+    return refresh();
+  };
+  provider.refresh = refresh;
+  return provider;
+}
+async function validate(cookie, fetchImpl, baseUrl) {
+  const res = await fetchImpl(`${baseUrl}/api/auth/me`, {
+    headers: { accept: "application/json", cookie },
+    signal: AbortSignal.timeout(PROBE_TIMEOUT_MS)
+  });
+  if (!res.ok) {
+    throw new VibesAuthError(`Fresh login was rejected by /auth/me (status ${res.status}).`);
+  }
+  const parsed = MeResponseSchema.safeParse(safeJsonParse(await res.text()));
+  if (!parsed.success) {
+    throw new VibesValidationError(
+      parsed.error.issues.map((i) => `- ${i.path.join(".") || "(root)"}: ${i.message}`),
+      parsed.data
+    );
+  }
+  return parsed.data.user;
+}
+async function isValid(cookie, opts) {
+  try {
+    const res = await (opts.fetchImpl ?? globalThis.fetch)(
+      `${(opts.baseUrl ?? API_BASE_URL).replace(/\/+$/, "")}/api/auth/me`,
+      { headers: { cookie }, signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) }
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+function readSessionFile(file) {
+  try {
+    const parsed = JSON.parse((0, import_node_fs3.readFileSync)(file, "utf8"));
+    return typeof parsed.cookie === "string" && parsed.cookie.length > 0 ? parsed.cookie : void 0;
+  } catch {
+    return void 0;
+  }
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
@@ -1968,6 +2419,7 @@ function setKeyringPassword() {
   ContentItemIdSchema,
   ContentItemsResource,
   DEFAULT_RETRY_OPTIONS,
+  DEFAULT_SESSION_FILE,
   DEFAULT_VARIATION_COUNT,
   DimensionsSchema,
   DirectPromptImageHandleSchema,
@@ -2022,13 +2474,16 @@ function setKeyringPassword() {
   VibesPollTimeoutError,
   VibesValidationError,
   VideosResource,
+  autoSession,
   batchId,
   browserSession,
   contentItemId,
   dimensionsToAspectRatio,
   extendBatchId,
+  login,
   mgRequestId,
   parseFirstJsonObject,
+  readCookiesFromBrowser,
   resolveAspectRatio,
   syncSessionFromBrowser,
   uuidv7,

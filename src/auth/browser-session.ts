@@ -18,9 +18,9 @@ import { VibesAuthError } from "../errors.js";
  * The first source with a `meta_session` cookie wins; missing databases are
  * skipped. Explicit choices never fall back.
  *
- * Keyring: as a generic fallback the v11 key is read once from the Secret
- * Service entry "Chromium Safe Storage" (the label Chromium forks use) and
- * passed via sweet-cookie's env override — inert when no such entry exists.
+ * Keyring: several "* Safe Storage" secrets may exist for the same browser
+ * family (chromium forks, app renames). Because nothing distinguishes them,
+ * each candidate secret is tried until one actually decrypts cookies.
  *
  * Env overrides:
  *   VIBES_SESSION_COOKIE  static session cookie (takes precedence)
@@ -102,6 +102,29 @@ function forkDbPath(kind: BrowserKind): string | undefined {
  * vibes.ai — sign in to vibes.ai in your browser and retry.
  */
 export async function syncSessionFromBrowser(cfg: BrowserSessionConfig = {}): Promise<string> {
+  return (await readCookiesFromBrowser(cfg)).header;
+}
+
+/** Which browser/profile produced the cookies (e.g. a copyable cookie DB). */
+export interface BrowserCookieSource {
+  name: string;
+  dbPath?: string;
+}
+
+export interface BrowserCookies {
+  /** Ready-to-send Cookie header (`name=value; …`). */
+  header: string;
+  cookies: Cookie[];
+  source: BrowserCookieSource;
+}
+
+/**
+ * Like `syncSessionFromBrowser`, but returns the read result — used by
+ * `auto-login.ts`, which forwards the cookies to the login browser.
+ */
+export async function readCookiesFromBrowser(
+  cfg: BrowserSessionConfig = {},
+): Promise<BrowserCookies> {
   const kind = (cfg.browser ?? process.env.VIBES_BROWSER) as BrowserKind | undefined;
   const profileDir = cfg.profileDir ?? process.env.VIBES_PROFILE_DIR;
   const readCookies = cfg.readCookies ?? defaultReadCookies;
@@ -139,7 +162,6 @@ export async function syncSessionFromBrowser(cfg: BrowserSessionConfig = {}): Pr
     console.warn(`   [browser] ${parts.join(", ")}`);
   }
 
-  setKeyringPassword();
   let warnings: string[] = [];
   for (const c of candidates) {
     if (c.dbPath && !existsSync(c.dbPath)) {
@@ -147,7 +169,7 @@ export async function syncSessionFromBrowser(cfg: BrowserSessionConfig = {}): Pr
       if (cfg.verbose) console.warn(`   [browser] ${c.name}: cookie database not found`);
       continue;
     }
-    const res = await readCookies({
+    const res = await readWithKeyCandidates(readCookies, {
       url: cfg.url ?? SESSION_URL,
       names,
       browsers: [c.browser],
@@ -168,7 +190,11 @@ export async function syncSessionFromBrowser(cfg: BrowserSessionConfig = {}): Pr
         ...picked.filter((c) => c.name === sessionName),
         ...picked.filter((c) => c.name !== sessionName),
       ];
-      return ordered.map((c) => `${c.name}=${c.value}`).join("; ");
+      return {
+        header: ordered.map((c) => `${c.name}=${c.value}`).join("; "),
+        cookies: ordered,
+        source: { name: c.name, ...(c.dbPath ? { dbPath: c.dbPath } : {}) },
+      };
     }
   }
   const why = warnings[0] ? ` (${warnings[0]})` : "";
@@ -223,21 +249,53 @@ const defaultReadCookies: NonNullable<BrowserSessionConfig["readCookies"]> = (op
     timeoutMs: opts.timeoutMs,
   });
 
-/* ------------------------------- keyring (v11) ------------------------------ */
+/* ---------------------- keyring (v11 secret selection) ---------------------- */
 
-const CHROMIUM_KEYRING_LABEL = "Chromium Safe Storage";
-let keyringLoaded = false;
+type ReadCookiesFn = NonNullable<BrowserSessionConfig["readCookies"]>;
+type ReadCookiesArgs = Parameters<ReadCookiesFn>[0];
+type ReadCookiesResult = Awaited<ReturnType<ReadCookiesFn>>;
 
-function setKeyringPassword(): void {
-  if (keyringLoaded) return;
-  keyringLoaded = true;
-  const r = spawnSync(
-    "secret-tool",
-    ["search", "--all", "xdg:schema", "chrome_libsecret_os_crypt_password_v2"],
-    { encoding: "utf8", timeout: 15_000 },
-  );
-  if (r.status !== 0 || !r.stdout) return;
-  const block = r.stdout.split(/\[\/\d+\]/).find((b) => b.includes(CHROMIUM_KEYRING_LABEL));
-  const secret = block?.match(/secret = (.+)/)?.[1];
-  if (secret) process.env.SWEET_COOKIE_CHROME_SAFE_STORAGE_PASSWORD = secret.trim();
+let keyringSecrets: (string | undefined)[] | undefined;
+
+/**
+ * Read cookies, trying every Secret Service "* Safe Storage" key until one
+ * decrypts values. Nothing distinguishes duplicate labels, so trial-decryption
+ * is the only robust selector; `undefined` defers to sweet-cookie's built-in
+ * lookup. An empty result is kept so a locked/absent keyring never throws.
+ */
+async function readWithKeyCandidates(
+  readCookies: ReadCookiesFn,
+  args: ReadCookiesArgs,
+): Promise<ReadCookiesResult> {
+  let last: ReadCookiesResult = { cookies: [], warnings: [] };
+  for (const secret of keyringCandidates()) {
+    if (secret === undefined) delete process.env.SWEET_COOKIE_CHROME_SAFE_STORAGE_PASSWORD;
+    else process.env.SWEET_COOKIE_CHROME_SAFE_STORAGE_PASSWORD = secret;
+    last = await readCookies(args);
+    if (last.cookies.some((c) => c.value.length > 0)) return last;
+  }
+  return last;
+}
+
+/** Every "* Safe Storage" key in the Secret Service, chromium-labeled first. */
+function keyringCandidates(): (string | undefined)[] {
+  if (keyringSecrets === undefined) {
+    const chrom: string[] = [];
+    const other: string[] = [];
+    const r = spawnSync(
+      "secret-tool",
+      ["search", "--all", "xdg:schema", "chrome_libsecret_os_crypt_password_v2"],
+      { encoding: "utf8", timeout: 15_000 },
+    );
+    if (r.status === 0 && r.stdout) {
+      for (const block of r.stdout.split(/\[\/\d+\]/)) {
+        const label = block.match(/label = (.+)/)?.[1] ?? "";
+        const secret = block.match(/secret = (.+)/)?.[1]?.trim();
+        if (!secret || !/safe storage/i.test(label)) continue;
+        (/chrom(e|ium)/i.test(label) ? chrom : other).push(secret);
+      }
+    }
+    keyringSecrets = [undefined, ...chrom, ...other];
+  }
+  return keyringSecrets;
 }

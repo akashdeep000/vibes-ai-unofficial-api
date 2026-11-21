@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe("videos.generateAndWait (t2v)", () => {
-  it("submits the exact wire format, polls /generation-batches and PUTs the result", async () => {
+  it("submits the exact wire format, tracks via the project batch list (stream: false) and PUTs the result", async () => {
     const server = installMockServer();
     const generateFixture = FIXTURES.get("generate-videos.json")!.responses[0];
 
@@ -43,20 +43,23 @@ describe("videos.generateAndWait (t2v)", () => {
       capturedBatchId = (req.jsonBody as { id: string }).id;
       return jsonResponse({ batch: null, id: capturedBatchId });
     });
-    server.on("GET", /generation-batches\/[^/]+$/, () => {
+    server.on("GET", /\/projects\/[^/]+\/batches$/, () => {
       getPolls += 1;
       // First poll: pending. Subsequent polls: complete.
       const done = getPolls > 1;
       return jsonResponse({
-        batch: fullBatch(captured!.batchId, {
-          items: captured!.inputs.map((_, i) =>
-            contentItem(captured!.batchId, i, {
-              videoUrl: done ? `https://vibes.ai/cdn/out-${i}.mp4` : null,
-              done,
-            }),
-          ),
-          isComplete: done,
-        }),
+        batches: [
+          fullBatch(captured!.batchId, {
+            items: captured!.inputs.map((_, i) =>
+              contentItem(captured!.batchId, i, {
+                videoUrl: done ? `https://vibes.ai/cdn/out-${i}.mp4` : null,
+                done,
+              }),
+            ),
+            isComplete: done,
+          }),
+        ],
+        nextOffset: null,
       });
     });
     server.on("PUT", "/api/generation-batches", (req) => {
@@ -77,7 +80,7 @@ describe("videos.generateAndWait (t2v)", () => {
         },
         variations: 2,
       },
-      { timeoutMs: 1_000, intervalMs: 5 },
+      { timeoutMs: 1_000, intervalMs: 5, stream: false },
     );
 
     // Wire-format assertions: the request matches the captured trace shape.
@@ -132,7 +135,7 @@ describe("videos.generateAndWait (t2v)", () => {
     expect(putPayload.isComplete).toBe(true);
     expect(putPayload.content.some((c) => c.videoUrl !== null)).toBe(true);
 
-    expect(result.videos.length).toBeGreaterThan(0);
+    expect(result.videos).toHaveLength(1);
     for (const video of result.videos) {
       expect(video.videoUrl).toBeTruthy();
       expect(video.error).toBeNull();
@@ -199,17 +202,20 @@ describe("videos.generateAndWait (t2v)", () => {
       puts.push(req.jsonBody);
       return jsonResponse({ batch: fullBatch(capturedBatchId, {}) });
     });
-    server.on("GET", /generation-batches\/[^/]+$/, () =>
+    server.on("GET", /\/projects\/[^/]+\/batches$/, () =>
       jsonResponse({
-        batch: fullBatch(capturedBatchId, {
-          isComplete: true,
-          items: [
-            contentItem(capturedBatchId, 0, {
-              videoUrl: "https://vibes.ai/cdn/s1.mp4",
-              done: true,
-            }),
-          ],
-        }),
+        batches: [
+          fullBatch(capturedBatchId, {
+            isComplete: true,
+            items: [
+              contentItem(capturedBatchId, 0, {
+                videoUrl: "https://vibes.ai/cdn/s1.mp4",
+                done: true,
+              }),
+            ],
+          }),
+        ],
+        nextOffset: null,
       }),
     );
 
@@ -240,19 +246,222 @@ describe("videos.generateAndWait (t2v)", () => {
         data: unknown;
       }>;
     };
-    // The PUT was built from the stream's final event, with `data` stringified
-    // and the epoch-suffixed resolved id collapsed onto the base content slot,
-    // marked `isLoading: false` (a loading placeholder would stay "pending").
+    // The PUT was built from the stream's final event, with `data` kept as an
+    // object and the epoch-suffixed resolved id collapsed onto the base
+    // content slot, marked `isLoading: false` (a loading placeholder would
+    // stay "pending").
     expect(putPayload.isComplete).toBe(true);
     expect(putPayload.content).toHaveLength(1);
     expect(putPayload.content[0]?.id).toBe(contentItemId(capturedBatchId, 0));
     expect(putPayload.content[0]?.isLoading).toBe(false);
     expect(putPayload.content[0]?.videoUrl).toBe("https://vibes.ai/cdn/s1.mp4");
-    expect(putPayload.content[0]?.data).toBe(JSON.stringify({ videoGenEntId: "ent-1" }));
+    expect(putPayload.content[0]?.data).toEqual({ videoGenEntId: "ent-1" });
 
     expect(result.batch.isComplete).toBe(true);
     expect(result.videos).toHaveLength(1);
     expect(result.videos[0]?.videoUrl).toBe("https://vibes.ai/cdn/s1.mp4");
+  });
+
+  it("listens via SSE by default (no `stream` option → /stream endpoint is used)", async () => {
+    const server = installMockServer();
+    const generateFixture = FIXTURES.get("generate-videos.json")!.responses[0];
+
+    let capturedBatchId = "";
+    let streamCalls = 0;
+    let listCalls = 0;
+    const puts: unknown[] = [];
+
+    const sseEvents = (batchId: string): string => {
+      const resolved = (id: string): Record<string, unknown> => ({
+        id,
+        type: "videos",
+        isLoading: false,
+        videoUrl: "https://vibes.ai/cdn/s1.mp4",
+        videoHandle: null,
+        imageUrl: null,
+        imageHandle: null,
+        data: { videoGenEntId: "ent-1" },
+        error: null,
+      });
+      return [
+        `retry: 15000\n\ndata: ${JSON.stringify({ success: true, isComplete: false, items: [resolved(contentItemId(batchId, 0))] })}\n\n`,
+        `data: ${JSON.stringify({ success: true, isComplete: true, items: [resolved(contentItemId(batchId, 0))] })}\n\n`,
+      ].join("");
+    };
+
+    server.on("POST", "/api/generate/videos", (req) => {
+      const body = req.jsonBody as { batchId: string };
+      capturedBatchId = body.batchId;
+      return jsonResponse({
+        ...(generateFixture as Record<string, unknown>),
+        batchId: body.batchId,
+      });
+    });
+    server.on("POST", "/api/generation-batches", (req) =>
+      jsonResponse({ batch: null, id: (req.jsonBody as { id: string }).id }),
+    );
+    server.on("GET", /generation-batches\/[^/]+\/stream/, (_) => {
+      streamCalls += 1;
+      return new Response(sseEvents(capturedBatchId), {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      });
+    });
+    server.on("GET", /\/projects\/[^/]+\/batches$/, (_) => {
+      listCalls += 1;
+      return jsonResponse({
+        batches: [
+          fullBatch(capturedBatchId, {
+            isComplete: true,
+            items: [
+              contentItem(capturedBatchId, 0, {
+                videoUrl: "https://vibes.ai/cdn/s1.mp4",
+                done: true,
+              }),
+            ],
+          }),
+        ],
+        nextOffset: null,
+      });
+    });
+    server.on("PUT", "/api/generation-batches", (req) => {
+      puts.push(req.jsonBody);
+      return jsonResponse({ batch: fullBatch(capturedBatchId, {}) });
+    });
+
+    const client = new VibesClient();
+    const result = await client.videos.generateAndWait(
+      {
+        projectId: PROJECT_ID,
+        prompt: "a river at dawn",
+        startFrame: {
+          imageUrl: "https://vibes.ai/cdn/start.png",
+          imageEntId: "1166369879902864",
+        },
+        variations: 1,
+      },
+      { timeoutMs: 2_000 },
+    );
+
+    // Completion was detected through the SSE stream — not by polling the
+    // project batch list for `isComplete` (the list is only hit once, to
+    // resolve the finalized batch record after the PUT).
+    expect(streamCalls).toBe(1);
+    expect(listCalls).toBeLessThanOrEqual(1);
+    expect(puts.length).toBe(1);
+    expect(result.batch.isComplete).toBe(true);
+    expect(result.videos[0]?.videoUrl).toBe("https://vibes.ai/cdn/s1.mp4");
+    // Without `all`, only the first finished variation is returned.
+    expect(result.videos).toHaveLength(1);
+  });
+
+  it("returns all 4 variations when `all` is set, even if stream events are incremental", async () => {
+    const server = installMockServer();
+    const generateFixture = FIXTURES.get("generate-videos.json")!.responses[0];
+
+    let capturedBatchId = "";
+    const puts: unknown[] = [];
+
+    // Each event carries only the slot that changed. The terminal event is
+    // not cumulative either, so a finalize built from just the last event
+    // would drop three videos.
+    const sseEvents = (batchId: string): string => {
+      const slot = (index: number) => ({
+        id: `${contentItemId(batchId, index)}-1785882833768`,
+        type: "videos",
+        isLoading: false,
+        videoUrl: `https://vibes.ai/cdn/s${index}.mp4`,
+        videoHandle: null,
+        imageUrl: null,
+        imageHandle: null,
+        data: { videoGenEntId: `ent-${index}` },
+        error: null,
+      });
+      return [0, 1, 2, 3]
+        .map(
+          (index) =>
+            `data: ${JSON.stringify({
+              success: true,
+              isComplete: index === 3,
+              items: [slot(index)],
+            })}\n\n`,
+        )
+        .join("");
+    };
+
+    server.on("POST", "/api/generate/videos", (req) => {
+      const body = req.jsonBody as { batchId: string; inputs: unknown[] };
+      capturedBatchId = body.batchId;
+      expect(body.inputs).toHaveLength(4);
+      return jsonResponse({
+        ...(generateFixture as Record<string, unknown>),
+        batchId: body.batchId,
+      });
+    });
+    server.on("POST", "/api/generation-batches", (req) =>
+      jsonResponse({ batch: null, id: (req.jsonBody as { id: string }).id }),
+    );
+    server.on(
+      "GET",
+      /generation-batches\/[^/]+\/stream/,
+      () =>
+        new Response(sseEvents(capturedBatchId), {
+          status: 200,
+          headers: { "content-type": "text/event-stream" },
+        }),
+    );
+    server.on("PUT", "/api/generation-batches", (req) => {
+      puts.push(req.jsonBody);
+      return jsonResponse({ batch: fullBatch(capturedBatchId, {}) });
+    });
+    server.on("GET", /\/projects\/[^/]+\/batches$/, () =>
+      jsonResponse({
+        batches: [
+          fullBatch(capturedBatchId, {
+            isComplete: true,
+            items: [0, 1, 2, 3].map((index) =>
+              contentItem(capturedBatchId, index, {
+                videoUrl: `https://vibes.ai/cdn/s${index}.mp4`,
+                done: true,
+              }),
+            ),
+          }),
+        ],
+        nextOffset: null,
+      }),
+    );
+
+    const client = new VibesClient();
+    const result = await client.videos.generateAndWait(
+      {
+        projectId: PROJECT_ID,
+        prompt: "a river at dawn",
+        startFrame: {
+          imageUrl: "https://vibes.ai/cdn/start.png",
+          imageEntId: "1166369879902864",
+        },
+        variations: 4,
+      },
+      { timeoutMs: 2_000, stream: true, all: true },
+    );
+
+    // The finalize PUT accumulated every variation, not just the last event.
+    const putPayload = puts[0] as {
+      content: Array<{ id: string; videoUrl: string | null }>;
+    };
+    expect(putPayload.content).toHaveLength(4);
+    for (const [index, item] of putPayload.content.entries()) {
+      expect(item.id).toBe(contentItemId(capturedBatchId, index));
+      expect(item.videoUrl).toBe(`https://vibes.ai/cdn/s${index}.mp4`);
+    }
+
+    expect(result.videos).toHaveLength(4);
+    expect(result.videos.map((video) => video.videoUrl)).toEqual([
+      "https://vibes.ai/cdn/s0.mp4",
+      "https://vibes.ai/cdn/s1.mp4",
+      "https://vibes.ai/cdn/s2.mp4",
+      "https://vibes.ai/cdn/s3.mp4",
+    ]);
   });
 
   it("throws an error when the batch fails", async () => {
@@ -271,14 +480,17 @@ describe("videos.generateAndWait (t2v)", () => {
       });
     });
     server.on("POST", "/api/generation-batches", () => jsonResponse({ batch: null, id: "x" }));
-    server.on("GET", /generation-batches\/[^/]+$/, () =>
+    server.on("GET", /\/projects\/[^/]+\/batches$/, () =>
       jsonResponse({
-        batch: fullBatch(capturedBatchId, {
-          isComplete: false,
-          hasError: true,
-          error: "model timed out",
-          items: [],
-        }),
+        batches: [
+          fullBatch(capturedBatchId, {
+            isComplete: false,
+            hasError: true,
+            error: "model timed out",
+            items: [],
+          }),
+        ],
+        nextOffset: null,
       }),
     );
 
@@ -294,7 +506,7 @@ describe("videos.generateAndWait (t2v)", () => {
           },
           variations: 1,
         },
-        { timeoutMs: 1_000, intervalMs: 3 },
+        { timeoutMs: 1_000, intervalMs: 3, stream: false },
       ),
     ).rejects.toThrow(/model timed out/);
   });
@@ -316,12 +528,17 @@ describe("videos.generateAndWait (t2v)", () => {
       });
     });
     server.on("POST", "/api/generation-batches", () => jsonResponse({ batch: null, id: "x" }));
-    server.on("GET", /generation-batches\/[^/]+$/, () =>
+    server.on("GET", /\/projects\/[^/]+\/batches$/, () =>
       jsonResponse({
-        batch: fullBatch(captured!.batchId, {
-          items: captured!.inputs.map((_, i) => contentItem(captured!.batchId, i, { done: true })),
-          isComplete: true,
-        }),
+        batches: [
+          fullBatch(captured!.batchId, {
+            items: captured!.inputs.map((_, i) =>
+              contentItem(captured!.batchId, i, { done: true }),
+            ),
+            isComplete: true,
+          }),
+        ],
+        nextOffset: null,
       }),
     );
     server.on("PUT", "/api/generation-batches", () =>
@@ -336,7 +553,7 @@ describe("videos.generateAndWait (t2v)", () => {
         variations: 2,
         aspectRatio: "16:9",
       },
-      { timeoutMs: 1_000, intervalMs: 3 },
+      { timeoutMs: 1_000, intervalMs: 3, stream: false },
     );
 
     const body = captured!;
@@ -395,20 +612,23 @@ describe("videos.generateExtend / extendAndWait", () => {
     server.on("POST", "/api/generation-batches", (req) =>
       jsonResponse({ batch: null, id: (req.jsonBody as { id: string }).id }),
     );
-    server.on("GET", /generation-batches\/[^/]+$/, () => {
+    server.on("GET", /\/projects\/[^/]+\/batches$/, () => {
       if (!done) {
         done = true;
-        return jsonResponse({ batch: fullBatch(capturedBatchId, {}) });
+        return jsonResponse({ batches: [fullBatch(capturedBatchId, {})], nextOffset: null });
       }
       return jsonResponse({
-        batch: fullBatch(capturedBatchId, {
-          items: [
-            contentItem(capturedBatchId, 0, {
-              videoUrl: "https://vibes.ai/cdn/extended.mp4",
-              done: true,
-            }),
-          ],
-        }),
+        batches: [
+          fullBatch(capturedBatchId, {
+            items: [
+              contentItem(capturedBatchId, 0, {
+                videoUrl: "https://vibes.ai/cdn/extended.mp4",
+                done: true,
+              }),
+            ],
+          }),
+        ],
+        nextOffset: null,
       });
     });
     server.on("PUT", "/api/generation-batches", () =>
@@ -429,7 +649,7 @@ describe("videos.generateExtend / extendAndWait", () => {
           contentItemId: "source-content-item",
         },
       },
-      { timeoutMs: 1_000, intervalMs: 5 },
+      { timeoutMs: 1_000, intervalMs: 5, stream: false },
     );
 
     expect(capturedBatchId).toMatch(/^extend-/);
@@ -468,17 +688,20 @@ describe("videos.extendToDuration", () => {
       });
     });
     server.on("POST", "/api/generation-batches", () => jsonResponse({ batch: null, id: "x" }));
-    server.on("GET", /generation-batches\/[^/]+$/, () => {
+    server.on("GET", /\/projects\/[^/]+\/batches$/, () => {
       const last = liveAssets[liveAssets.length - 1]!;
       return jsonResponse({
-        batch: fullBatch(last.batchId as string, {
-          items: [
-            contentItem(last.batchId as string, 0, {
-              videoUrl: last.videoUrl as string,
-              done: true,
-            }),
-          ],
-        }),
+        batches: [
+          fullBatch(last.batchId as string, {
+            items: [
+              contentItem(last.batchId as string, 0, {
+                videoUrl: last.videoUrl as string,
+                done: true,
+              }),
+            ],
+          }),
+        ],
+        nextOffset: null,
       });
     });
     server.on("PUT", "/api/generation-batches", (req) => {
@@ -496,7 +719,7 @@ describe("videos.extendToDuration", () => {
       prompt: "keep going",
       source: { mediaEntId: "m1", videoUrl: "https://vibes.ai/cdn/a.mp4" },
       targetSeconds: 10,
-      poll: { timeoutMs: 1_000, intervalMs: 5 },
+      poll: { timeoutMs: 1_000, intervalMs: 5, stream: false },
       onExtend: ({ totalDurationSeconds }) => durations.push(totalDurationSeconds),
     });
 

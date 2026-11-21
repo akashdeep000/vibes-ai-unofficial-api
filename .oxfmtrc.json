@@ -7,5 +7,5 @@
   "tabWidth": 2,
   "useTabs": false,
   "arrowParens": "always",
-  "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**"]
+  "ignorePatterns": ["dist/**", "node_modules/**", "coverage/**", "requests/**/*.har"]
 }
